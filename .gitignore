@@ -1,0 +1,60 @@
+# Secrets - DO NOT COMMIT
+.streamlit/secrets.toml
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Scripts used only for fixing data
+fix_ipeds_names.py
+fix_all_missing_data.py
+final_fix.py
+check_encoding.py
+check_research_fields.py
+
+# Old/backup files
+*_old.xlsx
+*- Copy.xlsx
+
+# Test and development files
+c.py
+ch.py
+chatbot.py
+chatbot_mod.py
+chatbot_module.py
+chatbothf.py
+UNIVERSITY.py
+Times 2026.py
+
+# Data exploration notebooks and reports
+*.ipynb
+*.txt
+NJ_UNI.xlsx
+Times_2026.xlsx
+
+# Windows reserved filenames
+nul
+con
+prn
+aux
