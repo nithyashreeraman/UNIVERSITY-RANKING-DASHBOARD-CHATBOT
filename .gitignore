@@ -49,9 +49,12 @@ Times 2026.py
 
 # Data exploration notebooks and reports
 *.ipynb
-*.txt
 NJ_UNI.xlsx
 Times_2026.xlsx
+
+# Exclude specific report files but NOT requirements.txt
+IPEDS_Verification_Report.txt
+name_comparison.txt
 
 # Windows reserved filenames
 nul
