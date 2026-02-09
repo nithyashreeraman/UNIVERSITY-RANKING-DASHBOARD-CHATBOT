@@ -19,46 +19,94 @@ AVAILABLE_MODELS = {
 
 import re
 
-def extract_year_from_question(question: str, available_years: list) -> int:
+def extract_year_from_question(question: str, available_years: list) -> dict:
     """
-    Extract year from user's question if they ask about a specific year.
-    Returns None if no specific year mentioned.
+    Extract year information from user's question.
+    Returns dict with:
+    - 'type': 'single', 'multiple', 'range', 'relative', 'all'
+    - 'years': list of specific years to include
     """
+    question_lower = question.lower()
+
+    # Check for "all years" or aggregate queries
+    all_years_keywords = ['all years', 'all available years', 'across all years', 'every year',
+                          'overall', 'average', 'mean', 'across years', 'over time',
+                          'historical', 'trend', 'history']
+    if any(keyword in question_lower for keyword in all_years_keywords):
+        return {'type': 'all', 'years': available_years}
+
+    # Check for relative time periods
+    relative_patterns = [
+        (r'last (\d+) years?', 'last_n'),
+        (r'past (\d+) years?', 'last_n'),
+        (r'previous (\d+) years?', 'last_n'),
+        (r'recent (\d+) years?', 'last_n'),
+    ]
+
+    for pattern, rel_type in relative_patterns:
+        match = re.search(pattern, question_lower)
+        if match:
+            n = int(match.group(1))
+            recent_years = sorted(available_years, reverse=True)[:n]
+            return {'type': 'relative', 'years': sorted(recent_years)}
+
     # Look for 4-digit years in the question
     year_pattern = r'\b(20\d{2})\b'
     matches = re.findall(year_pattern, question)
+    found_years = []
 
     for match in matches:
         year = int(match)
         if year in available_years:
-            return year
+            found_years.append(year)
 
-    return None
+    if not found_years:
+        # No specific year mentioned, return latest year only
+        return {'type': 'single', 'years': [max(available_years)]}
+
+    # Check for year range patterns
+    range_patterns = [
+        r'from (\d{4}) to (\d{4})',
+        r'between (\d{4}) and (\d{4})',
+        r'(\d{4})\s*-\s*(\d{4})',
+        r'(\d{4})\s+to\s+(\d{4})',
+    ]
+
+    for pattern in range_patterns:
+        match = re.search(pattern, question)
+        if match:
+            start_year = int(match.group(1))
+            end_year = int(match.group(2))
+            range_years = [y for y in available_years if start_year <= y <= end_year]
+            if range_years:
+                return {'type': 'range', 'years': sorted(range_years)}
+
+    # Multiple specific years found
+    if len(found_years) > 1:
+        return {'type': 'multiple', 'years': sorted(found_years)}
+
+    # Single specific year
+    return {'type': 'single', 'years': found_years}
 
 
 def prepare_dataset_context(df: pd.DataFrame, question: str = "") -> str:
     """
     Prepare dataset context for the LLM.
-    - If user asks about specific year, send that year's data
-    - Otherwise, send latest year data (2025/2026)
+    - Detects year requirements from question (single, multiple, range, all)
+    - Sends appropriate year(s) data based on question context
     """
     if df is None or df.empty:
         return "No data available."
 
     # Get available years
     available_years = sorted(df['Year'].unique().tolist())
-    latest_year = df['Year'].max()
 
-    # Check if user asked about a specific year
-    requested_year = extract_year_from_question(question, available_years)
+    # Check if user asked about specific year(s)
+    year_info = extract_year_from_question(question, available_years)
+    target_years = year_info['years']
 
-    if requested_year:
-        target_year = requested_year
-    else:
-        target_year = latest_year
-
-    # Filter to target year
-    year_df = df[df['Year'] == target_year].copy()
+    # Filter to target year(s)
+    year_df = df[df['Year'].isin(target_years)].copy()
 
     # Select key columns based on agency
     key_columns = ['IPEDS_Name', 'Year']
@@ -75,13 +123,24 @@ def prepare_dataset_context(df: pd.DataFrame, question: str = "") -> str:
     available_cols = [c for c in key_columns if c in year_df.columns]
     year_df = year_df[available_cols]
 
+    # Sort by Year and University for consistency
+    year_df = year_df.sort_values(['Year', 'IPEDS_Name'])
+
     csv_data = year_df.to_csv(index=False)
+
+    # Build context message
+    if year_info['type'] == 'all':
+        year_desc = f"ALL YEARS ({min(target_years)}-{max(target_years)})"
+    elif year_info['type'] in ['multiple', 'range', 'relative']:
+        year_desc = f"YEARS: {', '.join(map(str, target_years))}"
+    else:
+        year_desc = f"YEAR: {target_years[0]}"
 
     context = f"""
 DATASET: {_CURRENT_AGENCY} University Rankings
-SHOWING DATA FOR YEAR: {target_year}
+SHOWING DATA FOR {year_desc}
 AVAILABLE YEARS IN DATASET: {available_years}
-TOTAL UNIVERSITIES: {len(year_df)}
+TOTAL UNIVERSITIES PER YEAR: ~{len(year_df) // len(target_years) if len(target_years) > 0 else len(year_df)}
 COLUMNS: {', '.join(available_cols)}
 
 DATA (CSV format):
@@ -90,7 +149,7 @@ DATA (CSV format):
     return context
 
 
-def call_hf_model(client: InferenceClient, system_prompt: str, user_message: str, max_tokens: int = 300) -> str:
+def call_hf_model(client: InferenceClient, system_prompt: str, user_message: str, max_tokens: int = 500) -> str:
     """Call Hugging Face model with chat completion"""
     try:
         messages = [
@@ -135,31 +194,83 @@ def get_ai_response(question: str, api_key: str, model_id: str) -> str:
     dataset_context = prepare_dataset_context(df, question)
 
     # System prompt with ranking rules
-    system_prompt = """You are a university rankings data analyst. You help users understand university ranking data.
+    system_prompt = """You are a university rankings data analyst. You help users understand university ranking data with EXTREME ACCURACY.
 
-IMPORTANT RULES FOR RANKINGS:
-- LOWER rank number = BETTER (Rank 1 is the BEST, Rank 1500 is very POOR)
-- Rank 1-50 = Excellent
-- Rank 51-200 = Very Good
-- Rank 201-500 = Good
-- Rank 501-1000 = Average
-- Rank 1000+ = Below Average
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚨 CRITICAL RULES - READ CAREFULLY BEFORE EVERY RESPONSE 🚨
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-- HIGHER scores = BETTER (Score 90 is better than Score 50)
+1. RANKING INTERPRETATION (MOST IMPORTANT):
+   ⚠️ LOWER RANK NUMBER = BETTER RANKING ⚠️
+
+   Examples:
+   • Rank 50 is BETTER than Rank 200
+   • Rank 100 is BETTER than Rank 500
+   • Rank 1 is BETTER than Rank 1000
+
+   When comparing:
+   • University with Rank 150 BEATS University with Rank 300
+   • University with Rank 80 BEATS University with Rank 100
+
+   ❌ NEVER say "higher rank" when you mean "better ranking"
+   ✅ ALWAYS say "lower rank number" or "better ranking"
+
+2. SCORES INTERPRETATION:
+   • HIGHER score = BETTER performance
+   • Score 90 is BETTER than Score 50
+   • Score 75.5 is BETTER than Score 68.0
+
+3. DATA VALIDATION - MANDATORY BEFORE ANSWERING:
+   ✅ Double-check ALL numbers before stating them
+   ✅ Verify year data matches the question
+   ✅ For calculations (averages, changes), verify using actual data values
+   ✅ For comparisons, confirm which university has the LOWER rank number
+   ✅ If data seems inconsistent, acknowledge it
+
+4. COMPARISON LOGIC:
+   When asked "Is X better than Y?":
+   STEP 1: Find X's rank number
+   STEP 2: Find Y's rank number
+   STEP 3: Compare: Lower number wins
+   STEP 4: State conclusion clearly
+
+   Example: "NJIT Rank 120 vs WPI Rank 250 → NJIT is ranked BETTER (120 < 250)"
+
+5. MULTI-YEAR QUESTIONS:
+   • "Last 3 years" → Check data for 3 most recent years
+   • "Compare 2024 and 2025" → Show both years explicitly
+   • "Average across all years" → Calculate using ALL year values provided
+   • "Trend over time" → Show year-by-year progression
+
+6. MISSING DATA:
+   • If year is not in the provided data, say "Data not available for [year]"
+   • Do NOT make up or extrapolate data
+   • Do NOT assume consistent values across years
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 RESPONSE STYLE:
 - Keep responses SHORT and PRECISE (2-4 sentences maximum)
-- For comparisons: Use bullet points, show only KEY metrics (3-4 metrics max)
-- End with a 1-line conclusion summarizing who performs better
-- NO lengthy explanations
-- Direct answers only with specific numbers from the data"""
+- For comparisons: Use bullet points, show only KEY metrics
+- End with a 1-line CONCLUSION that clearly states who performs better
+- Use ONLY data from the provided CSV - NO external knowledge
+- Show specific numbers from the data to support your answer"""
 
     # User message with context and question
     user_message = f"""{dataset_context}
 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 QUESTION: {question}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Answer in 2-4 sentences max. Be brief and direct. For comparisons, use bullet points. Lower rank = better."""
+REMINDER BEFORE ANSWERING:
+1. ⚠️ LOWER rank number = BETTER ranking (Rank 50 beats Rank 200)
+2. ✅ Verify all numbers from the CSV data above
+3. ✅ For comparisons, check which university has LOWER rank number
+4. ✅ For multi-year questions, use ALL relevant years from data
+5. ✅ Never make up data - only use what's provided above
+
+Answer in 2-4 sentences max. Be brief, direct, and ACCURATE."""
 
     try:
         client = InferenceClient(model=model_id, token=api_key)
