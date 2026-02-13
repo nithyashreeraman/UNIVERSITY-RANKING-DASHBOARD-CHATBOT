@@ -319,11 +319,11 @@ def render_hf_chatbot_ui(times_df, qs_df, usn_df, washington_df, selected_univer
     """Render the Hugging Face chatbot UI"""
     global _DATASETS, _CURRENT_AGENCY
 
-    # Set global datasets
-    _DATASETS["TIMES"] = times_df
-    _DATASETS["QS"] = qs_df
-    _DATASETS["USN"] = usn_df
-    _DATASETS["Washington"] = washington_df
+    # Set global datasets (filtered to selected universities to stay within token limits)
+    _DATASETS["TIMES"] = times_df[times_df["IPEDS_Name"].isin(selected_universities)]
+    _DATASETS["QS"] = qs_df[qs_df["IPEDS_Name"].isin(selected_universities)]
+    _DATASETS["USN"] = usn_df[usn_df["IPEDS_Name"].isin(selected_universities)]
+    _DATASETS["Washington"] = washington_df[washington_df["IPEDS_Name"].isin(selected_universities)]
 
     api_key = None
     try:
