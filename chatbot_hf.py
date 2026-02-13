@@ -112,13 +112,44 @@ def prepare_dataset_context(df: pd.DataFrame, question: str = "") -> str:
     key_columns = ['IPEDS_Name', 'Year']
 
     if _CURRENT_AGENCY == "TIMES":
-        key_columns += ['Times_Rank', 'Overall', 'Teaching', 'Research_Quality', 'Research_Environment', 'Industry', 'International_Outlook']
+        key_columns += [
+            'Times_Rank', 'Overall', 'Teaching', 'Research_Quality', 'Research_Environment',
+            'Industry', 'International_Outlook',
+            'No_of_FTE_Students', 'No_of_students_per_staff', 'International_Students',
+            'Female_Ratio', 'Male_Ratio'
+        ]
     elif _CURRENT_AGENCY == "QS":
-        key_columns += ['QS_Rank', 'Overall_Score', 'Academic_Reputation', 'Employer_Reputation', 'Citations_per_Faculty']
+        key_columns += [
+            'QS_Rank', 'Overall_Score', 'Academic_Reputation', 'Employer_Reputation',
+            'Citations_per_Faculty', 'Faculty_Student_Ratio', 'Employment_Outcomes',
+            'International_Faculty_Ratio', 'International_Student_Ratio',
+            'International_Research_Network', 'Sustainability_Score',
+            'International_Student_Diversity'
+        ]
     elif _CURRENT_AGENCY == "USN":
-        key_columns += ['Rank', 'Peer_assessment_score', 'Actual_graduation_rate', 'Average_first_year_retention_rate']
+        key_columns += [
+            'Rank', 'Overall_scores', 'Peer_assessment_score',
+            'Actual_graduation_rate', 'Average_first_year_retention_rate',
+            '6-year_Graduation_Rate', 'Over_/_Under-_Performance',
+            'Pell_Graduation_Rate', 'Median_debt_for_grads_with_federal_loans',
+            'College_grads_earning_more_than_a_HS_grad', 'Financial_resources_rank',
+            'Student-faculty_ratio', 'Percent_of_full-time_faculty',
+            'Bibliometric_Rank', 'Social_Mobility_Rank',
+            'Alumni_Giving', 'Acceptance_rate'
+        ]
     elif _CURRENT_AGENCY == "Washington":
-        key_columns += ['Washington_Rank', '8-year_graduation_rate', 'Research_expenditures_(M)']
+        key_columns += [
+            'Washington_Rank', '8-year_graduation_rate', 'Research_expenditures_(M)',
+            'Social_mobility_rank', 'Research_rank', 'Service_rank',
+            'Access_rank', 'Affordability_rank', 'Outcomes_rank',
+            'Number_of_Pell_recipients', 'Actual_vs._predicted_Pell_enrollment',
+            'Net_price_of_attendance_for_families_below_$75,000_income',
+            'Student_loan_debt_of_graduates', 'Pell/non-Pell_graduation_gap',
+            'Grad_rate_performance_rank', 'Earnings_after_9_years',
+            'Median_Earnings_after_10_years', "Bachelor's_to_PhD_rank",
+            'AmeriCorps/Peace_Corps_rank', 'ROTC_rank',
+            'Work-study_service_%', 'Service-oriented_majors_%'
+        ]
 
     available_cols = [c for c in key_columns if c in year_df.columns]
     year_df = year_df[available_cols]
