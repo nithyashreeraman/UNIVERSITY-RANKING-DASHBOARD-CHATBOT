@@ -317,15 +317,31 @@ Answer in 2-4 sentences max. Be brief, direct, and ACCURATE."""
 # STREAMLIT UI
 # ============================================================================
 
-def render_hf_chatbot_ui(times_df, qs_df, usn_df, washington_df, selected_universities, selected_years):
+def render_hf_chatbot_ui(times_df, qs_df, usn_df, washington_df, sidebar_selected_unis, selected_years):
     """Render the Hugging Face chatbot UI"""
     global _DATASETS, _CURRENT_AGENCY
 
-    # Set global datasets (filtered to selected universities to stay within token limits)
-    _DATASETS["TIMES"] = times_df[times_df["IPEDS_Name"].isin(selected_universities)]
-    _DATASETS["QS"] = qs_df[qs_df["IPEDS_Name"].isin(selected_universities)]
-    _DATASETS["USN"] = usn_df[usn_df["IPEDS_Name"].isin(selected_universities)]
-    _DATASETS["Washington"] = washington_df[washington_df["IPEDS_Name"].isin(selected_universities)]
+    NJIT_NAME = "New Jersey Institute of Technology"
+
+    # Reconstruct per-tab selections by merging sidebar + manual selections from session state
+    # This matches how each tab calculates its final university list
+    manual_times = st.session_state.get("manual_times_selected_unis", [])
+    times_selected = [NJIT_NAME] + list(set(sidebar_selected_unis + manual_times))
+
+    manual_qs = st.session_state.get("manual_qs_selected_unis", [])
+    qs_selected = [NJIT_NAME] + list(set(sidebar_selected_unis + manual_qs))
+
+    manual_usn = st.session_state.get("manual_usn_selected_unis", [])
+    usn_selected = [NJIT_NAME] + list(set(sidebar_selected_unis + manual_usn))
+
+    manual_washington = st.session_state.get("manual_washington_selected_unis", [])
+    washington_selected = [NJIT_NAME] + list(set(sidebar_selected_unis + manual_washington))
+
+    # Set global datasets (filtered to per-tab selections to stay within token limits)
+    _DATASETS["TIMES"] = times_df[times_df["IPEDS_Name"].isin(times_selected)]
+    _DATASETS["QS"] = qs_df[qs_df["IPEDS_Name"].isin(qs_selected)]
+    _DATASETS["USN"] = usn_df[usn_df["IPEDS_Name"].isin(usn_selected)]
+    _DATASETS["Washington"] = washington_df[washington_df["IPEDS_Name"].isin(washington_selected)]
 
     api_key = None
     try:

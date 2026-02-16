@@ -199,7 +199,7 @@ if CHATBOT_AVAILABLE:
     st.sidebar.header("🤖 AI Assistant")
     render_hf_chatbot_ui(
         times_df, qs_df, usn_df, washington_df,
-        [NJIT_NAME] + all_selected_unis,
+        all_selected_unis,  # Pass global sidebar selections (chatbot will merge with per-tab selections)
         selected_years
     )
 
