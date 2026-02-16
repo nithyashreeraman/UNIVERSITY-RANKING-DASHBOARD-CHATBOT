@@ -256,8 +256,12 @@ def prepare_dataset_context(df: pd.DataFrame, question: str = "") -> str:
                         # If parsing fails, send top 50
                         try:
                             year_df = year_df.nsmallest(50, rank_col)
-                        except (TypeError, ValueError):
-                            year_df = year_df.sort_values(rank_col).head(50)
+                        except (TypeError, ValueError, KeyError):
+                            try:
+                                year_df = year_df.sort_values(rank_col).head(50)
+                            except (TypeError, ValueError, KeyError):
+                                # If both fail, take first 50 rows
+                                year_df = year_df.head(50)
     # 2. Geographic filtering
     elif needs_nj_filter and 'New_Jersey_University' in year_df.columns:
         year_df = year_df[year_df['New_Jersey_University'] == 'Yes'].copy()
@@ -285,9 +289,13 @@ def prepare_dataset_context(df: pd.DataFrame, question: str = "") -> str:
             try:
                 # Try numeric sorting first (works for USN, Washington)
                 year_df = year_df.nsmallest(50, rank_col)
-            except (TypeError, ValueError):
-                # If that fails (TIMES/QS with string ranges), sort as strings then take first 50
-                year_df = year_df.sort_values(rank_col).head(50)
+            except (TypeError, ValueError, KeyError):
+                # If that fails, try sort_values (for string ranks)
+                try:
+                    year_df = year_df.sort_values(rank_col).head(50)
+                except (TypeError, ValueError, KeyError):
+                    # If both sorting methods fail, just take first 50 rows
+                    year_df = year_df.head(50)
 
     # Select key columns based on agency
     key_columns = ['IPEDS_Name', 'Year']
