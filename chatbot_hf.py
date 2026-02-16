@@ -153,12 +153,21 @@ def prepare_dataset_context(df: pd.DataFrame, question: str = "") -> str:
     available_unis = year_df['IPEDS_Name'].unique().tolist()
     mentioned_unis = extract_universities_from_question(question, available_unis)
 
-    if mentioned_unis:
-        # Filter to only mentioned universities
+    # Check if question needs discovery/comparison context (not just specific university lookup)
+    question_lower = question.lower()
+    discovery_keywords = ['competitor', 'best', 'top', 'which', 'who', 'similar', 'peer']
+    needs_context = any(keyword in question_lower for keyword in discovery_keywords)
+
+    # Smart filtering logic:
+    if mentioned_unis and len(mentioned_unis) >= 2 and not needs_context:
+        # Direct comparison between 2+ specific universities (e.g., "NJIT vs MIT score")
+        year_df = year_df[year_df['IPEDS_Name'].isin(mentioned_unis)].copy()
+    elif mentioned_unis and len(mentioned_unis) == 1 and not needs_context:
+        # Simple lookup for single university (e.g., "What is NJIT's rank?")
         year_df = year_df[year_df['IPEDS_Name'].isin(mentioned_unis)].copy()
     else:
-        # If no specific universities mentioned, limit to top 50 by rank to avoid token overflow
-        # This handles general questions like "which university is best?"
+        # Discovery question or general query → send top 50 by rank to provide context
+        # This handles: "Who are NJIT's competitors?", "Which is best?", "Compare universities"
         if _CURRENT_AGENCY == "TIMES" and 'Times_Rank' in year_df.columns:
             year_df = year_df.nsmallest(50, 'Times_Rank')
         elif _CURRENT_AGENCY == "QS" and 'QS_Rank' in year_df.columns:
