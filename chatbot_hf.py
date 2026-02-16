@@ -311,14 +311,50 @@ def get_ai_response(question: str, api_key: str, model_id: str) -> str:
    • Score 90 is BETTER than Score 50
    • Score 75.5 is BETTER than Score 68.0
 
-3. DATA VALIDATION - MANDATORY BEFORE ANSWERING:
+3. METRIC TYPES - CRITICAL FOR CORRECT INTERPRETATION:
+   ⚠️ DISTINGUISH BETWEEN COUNTS, RATES, AND GAPS ⚠️
+
+   A. COUNTS (Raw Numbers):
+      • Examples: Number_of_Pell_recipients, No_of_FTE_Students
+      • These are ABSOLUTE NUMBERS (e.g., 233 students, 5000 students)
+      • ❌ NEVER call these "rates" or "percentages"
+      • Interpretation: Larger institutions naturally have higher counts
+      • For "best rate" questions, DO NOT use count columns
+
+   B. RATES/PERCENTAGES (0-100 or 0.0-1.0):
+      • Examples: Graduation_rate, Pell_Graduation_Rate, Retention_rate
+      • Format: 0.85 = 85%, or already shown as 85
+      • HIGHER rate = BETTER performance (e.g., 85% grad rate > 60% grad rate)
+      • These measure SUCCESS relative to population size
+
+   C. GAPS (Differences Between Groups):
+      • Examples: Pell/non-Pell_graduation_gap, Earnings_gap
+      • SMALLER gap (closer to 0) = BETTER equity
+      • NEGATIVE gap may be GOOD (e.g., -0.05 means Pell students graduate MORE)
+      • Zero gap = perfect equity
+
+   D. PERFORMANCE METRICS (Actual vs Predicted):
+      • Examples: Actual_vs._predicted_Pell_enrollment, Grad_rate_performance_rank
+      • HIGHER than 1.0 = EXCEEDING expectations (GOOD)
+      • LOWER than 1.0 = UNDERPERFORMING expectations (BAD)
+
+   E. EXPENDITURES/FINANCIAL:
+      • Examples: Research_expenditures_(M), Net_price
+      • Context-dependent: Higher spending may be good (research), lower may be good (net price/affordability)
+
+   When answering "which has good [metric]" questions:
+   ✅ Identify if they're asking about COUNT, RATE, or GAP
+   ✅ Use the CORRECT column type (rate columns for rate questions)
+   ✅ Explain what the number means (e.g., "40% Pell rate" not "40 Pell rate")
+
+4. DATA VALIDATION - MANDATORY BEFORE ANSWERING:
    ✅ Double-check ALL numbers before stating them
    ✅ Verify year data matches the question
    ✅ For calculations (averages, changes), verify using actual data values
    ✅ For comparisons, confirm which university has the LOWER rank number
    ✅ If data seems inconsistent, acknowledge it
 
-4. COMPARISON LOGIC:
+5. COMPARISON LOGIC:
    When asked "Is X better than Y?":
    STEP 1: Find X's rank number
    STEP 2: Find Y's rank number
@@ -327,13 +363,13 @@ def get_ai_response(question: str, api_key: str, model_id: str) -> str:
 
    Example: "NJIT Rank 120 vs WPI Rank 250 → NJIT is ranked BETTER (120 < 250)"
 
-5. MULTI-YEAR QUESTIONS:
+6. MULTI-YEAR QUESTIONS:
    • "Last 3 years" → Check data for 3 most recent years
    • "Compare 2024 and 2025" → Show both years explicitly
    • "Average across all years" → Calculate using ALL year values provided
    • "Trend over time" → Show year-by-year progression
 
-6. MISSING DATA:
+7. MISSING DATA:
    • If year is not in the provided data, say "Data not available for [year]"
    • Do NOT make up or extrapolate data
    • Do NOT assume consistent values across years
@@ -356,10 +392,11 @@ QUESTION: {question}
 
 REMINDER BEFORE ANSWERING:
 1. ⚠️ LOWER rank number = BETTER ranking (Rank 50 beats Rank 200)
-2. ✅ Verify all numbers from the CSV data above
-3. ✅ For comparisons, check which university has LOWER rank number
-4. ✅ For multi-year questions, use ALL relevant years from data
-5. ✅ Never make up data - only use what's provided above
+2. ⚠️ DISTINGUISH metric types: Number_of_X = COUNT (not rate), X_rate = PERCENTAGE, X_gap = DIFFERENCE
+3. ✅ Verify all numbers from the CSV data above
+4. ✅ For comparisons, check which university has LOWER rank number
+5. ✅ For multi-year questions, use ALL relevant years from data
+6. ✅ Never make up data - only use what's provided above
 
 Answer in 2-4 sentences max. Be brief, direct, and ACCURATE."""
 
