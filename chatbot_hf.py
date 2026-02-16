@@ -172,17 +172,9 @@ def prepare_dataset_context(df: pd.DataFrame, question: str = "") -> str:
     nj_keywords = [' nj ', ' new jersey', 'in nj', 'in new jersey']
     needs_nj_filter = any(keyword in question_lower for keyword in nj_keywords)
 
-    # Smart filtering logic:
-    if needs_nj_filter and 'New_Jersey_University' in year_df.columns:
-        # Geographic filter: send all NJ universities
-        year_df = year_df[year_df['New_Jersey_University'] == 'Yes'].copy()
-    elif mentioned_unis and len(mentioned_unis) >= 2 and not needs_context and not needs_competitors:
-        # Direct comparison between 2+ specific universities (e.g., "NJIT vs MIT score")
-        year_df = year_df[year_df['IPEDS_Name'].isin(mentioned_unis)].copy()
-    elif mentioned_unis and len(mentioned_unis) == 1 and not needs_context and not needs_competitors:
-        # Simple lookup for single university (e.g., "What is NJIT's rank?")
-        year_df = year_df[year_df['IPEDS_Name'].isin(mentioned_unis)].copy()
-    elif needs_competitors and mentioned_unis:
+    # Smart filtering logic (priority order matters):
+    # 1. Competitor questions - HIGHEST PRIORITY
+    if needs_competitors:
         # Competitor question: find universities with similar rank (±25 rank positions)
         # e.g., "Who are NJIT's competitors?"
         njit_name = "New Jersey Institute of Technology"
@@ -250,6 +242,16 @@ def prepare_dataset_context(df: pd.DataFrame, question: str = "") -> str:
                             year_df = year_df.nsmallest(50, rank_col)
                         except (TypeError, ValueError):
                             year_df = year_df.sort_values(rank_col).head(50)
+    # 2. Geographic filtering
+    elif needs_nj_filter and 'New_Jersey_University' in year_df.columns:
+        year_df = year_df[year_df['New_Jersey_University'] == 'Yes'].copy()
+    # 3. Direct comparison between specific universities
+    elif mentioned_unis and len(mentioned_unis) >= 2:
+        year_df = year_df[year_df['IPEDS_Name'].isin(mentioned_unis)].copy()
+    # 4. Single university lookup
+    elif mentioned_unis and len(mentioned_unis) == 1 and not needs_context:
+        year_df = year_df[year_df['IPEDS_Name'].isin(mentioned_unis)].copy()
+    # 5. General discovery - send top 50
     else:
         # General discovery question → send top 50 by rank
         # This handles: "Which is best?", "Top universities"
