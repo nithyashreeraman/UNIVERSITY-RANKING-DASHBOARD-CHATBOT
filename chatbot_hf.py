@@ -178,7 +178,9 @@ def prepare_dataset_context(df: pd.DataFrame, question: str = "") -> str:
         # Competitor question: find universities with similar rank (±25 rank positions)
         # e.g., "Who are NJIT's competitors?"
         njit_name = "New Jersey Institute of Technology"
-        if njit_name in mentioned_unis or njit_name in available_unis:
+
+        # Ensure NJIT is in the dataset
+        if njit_name in available_unis:
             # Find NJIT's rank and filter to nearby universities
             rank_col = None
             if _CURRENT_AGENCY == "TIMES" and 'Times_Rank' in year_df.columns:
@@ -236,6 +238,13 @@ def prepare_dataset_context(df: pd.DataFrame, question: str = "") -> str:
                                 (year_df[rank_col] >= njit_rank - 25) &
                                 (year_df[rank_col] <= njit_rank + 25)
                             ].copy()
+
+                            # Ensure NJIT itself is in the results
+                            if njit_name not in year_df['IPEDS_Name'].values:
+                                # Add NJIT back if it was filtered out
+                                njit_row = df[(df['IPEDS_Name'] == njit_name) & (df['Year'].isin(target_years))]
+                                if not njit_row.empty:
+                                    year_df = pd.concat([year_df, njit_row], ignore_index=True)
                     except (ValueError, TypeError, IndexError):
                         # If parsing fails, send top 50
                         try:
