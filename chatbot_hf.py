@@ -155,19 +155,46 @@ def prepare_dataset_context(df: pd.DataFrame, question: str = "") -> str:
 
     # Check if question needs discovery/comparison context (not just specific university lookup)
     question_lower = question.lower()
-    discovery_keywords = ['competitor', 'best', 'top', 'which', 'who', 'similar', 'peer']
+    discovery_keywords = ['best', 'top', 'which', 'who']
+    competitor_keywords = ['competitor', 'similar', 'peer', 'comparable']
     needs_context = any(keyword in question_lower for keyword in discovery_keywords)
+    needs_competitors = any(keyword in question_lower for keyword in competitor_keywords)
 
     # Smart filtering logic:
-    if mentioned_unis and len(mentioned_unis) >= 2 and not needs_context:
+    if mentioned_unis and len(mentioned_unis) >= 2 and not needs_context and not needs_competitors:
         # Direct comparison between 2+ specific universities (e.g., "NJIT vs MIT score")
         year_df = year_df[year_df['IPEDS_Name'].isin(mentioned_unis)].copy()
-    elif mentioned_unis and len(mentioned_unis) == 1 and not needs_context:
+    elif mentioned_unis and len(mentioned_unis) == 1 and not needs_context and not needs_competitors:
         # Simple lookup for single university (e.g., "What is NJIT's rank?")
         year_df = year_df[year_df['IPEDS_Name'].isin(mentioned_unis)].copy()
+    elif needs_competitors and mentioned_unis:
+        # Competitor question: find universities with similar rank (±25 rank positions)
+        # e.g., "Who are NJIT's competitors?"
+        njit_name = "New Jersey Institute of Technology"
+        if njit_name in mentioned_unis or njit_name in available_unis:
+            # Find NJIT's rank and filter to nearby universities
+            rank_col = None
+            if _CURRENT_AGENCY == "TIMES" and 'Times_Rank' in year_df.columns:
+                rank_col = 'Times_Rank'
+            elif _CURRENT_AGENCY == "QS" and 'QS_Rank' in year_df.columns:
+                rank_col = 'QS_Rank'
+            elif _CURRENT_AGENCY == "USN" and 'Rank' in year_df.columns:
+                rank_col = 'Rank'
+            elif _CURRENT_AGENCY == "Washington" and 'Washington_Rank' in year_df.columns:
+                rank_col = 'Washington_Rank'
+
+            if rank_col:
+                njit_data = year_df[year_df['IPEDS_Name'] == njit_name]
+                if not njit_data.empty:
+                    njit_rank = njit_data[rank_col].iloc[0]
+                    # Filter to universities within ±25 ranks of NJIT
+                    year_df = year_df[
+                        (year_df[rank_col] >= njit_rank - 25) &
+                        (year_df[rank_col] <= njit_rank + 25)
+                    ].copy()
     else:
-        # Discovery question or general query → send top 50 by rank to provide context
-        # This handles: "Who are NJIT's competitors?", "Which is best?", "Compare universities"
+        # General discovery question → send top 50 by rank
+        # This handles: "Which is best?", "Top universities"
         if _CURRENT_AGENCY == "TIMES" and 'Times_Rank' in year_df.columns:
             year_df = year_df.nsmallest(50, 'Times_Rank')
         elif _CURRENT_AGENCY == "QS" and 'QS_Rank' in year_df.columns:
