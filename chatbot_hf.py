@@ -484,6 +484,16 @@ def get_ai_response(question: str, api_key: str, model_id: str) -> str:
 
    Example: "NJIT Rank 120 vs WPI Rank 250 → NJIT is ranked BETTER (120 < 250)"
 
+   When asked "Who are X's competitors/peers?":
+   ⚠️ COMPETITORS = SIMILAR RANK, NOT BETTER RANK ⚠️
+   STEP 1: Find X's rank number
+   STEP 2: Find universities with ranks CLOSEST to X's rank (within ±5 positions)
+   STEP 3: Prioritize TIED ranks (exact same rank) first
+   STEP 4: Then include ranks just above and below
+
+   Example: "NJIT Rank 80 → Competitors are Drexel (80-tied), Stevens (80-tied), WPI (84)"
+   ❌ WRONG: "NJIT Rank 80 → Competitors are Villanova (57)" - 57 is BETTER, not a peer
+
 6. MULTI-YEAR QUESTIONS:
    • "Last 3 years" → Check data for 3 most recent years
    • "Compare 2024 and 2025" → Show both years explicitly
