@@ -376,13 +376,18 @@ def prepare_dataset_context(df: pd.DataFrame, question: str = "") -> str:
     # Check if NJIT is in filtered data
     njit_check = "YES - New Jersey Institute of Technology is in this data" if njit_present else "NO - New Jersey Institute of Technology is NOT in this data"
 
+    # Add filtering note for competitor questions
+    filter_note = ""
+    if needs_competitors and njit_present:
+        filter_note = "\n⚠️ IMPORTANT: This data has been PRE-FILTERED to show only universities with similar ranks to New Jersey Institute of Technology. All universities in this CSV are appropriate competitors - just list them directly from the data below."
+
     context = f"""
 DATASET: {_CURRENT_AGENCY} University Rankings
 SHOWING DATA FOR {year_desc}
 AVAILABLE YEARS IN DATASET: {available_years}
 TOTAL UNIVERSITIES IN THIS DATA: {len(unis_in_data)}
 NJIT PRESENT: {njit_check}
-UNIVERSITIES INCLUDED: {', '.join(unis_in_data[:20])}{'...' if len(unis_in_data) > 20 else ''}
+UNIVERSITIES INCLUDED: {', '.join(unis_in_data[:20])}{'...' if len(unis_in_data) > 20 else ''}{filter_note}
 COLUMNS: {', '.join(available_cols)}
 
 DATA (CSV format):
@@ -601,7 +606,7 @@ QUESTION: {expanded_question}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 REMINDER BEFORE ANSWERING:
-1. Answer based on the CSV data provided above
+1. ⚠️ ONLY use universities listed in the CSV above - do not mention any university not in the CSV
 2. LOWER rank number = BETTER ranking (Rank 50 beats Rank 200)
 3. Distinguish metric types: Number_of_X = COUNT, X_rate = PERCENTAGE, X_gap = DIFFERENCE
 4. For tied ranks (same rank like "501-600"), list universities as equal competitors
