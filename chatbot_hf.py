@@ -363,11 +363,15 @@ def prepare_dataset_context(df: pd.DataFrame, question: str = "") -> str:
     else:
         year_desc = f"YEAR: {target_years[0]}"
 
+    # Get list of universities in the filtered dataset for debug visibility
+    unis_in_data = sorted(year_df['IPEDS_Name'].unique().tolist())
+
     context = f"""
 DATASET: {_CURRENT_AGENCY} University Rankings
 SHOWING DATA FOR {year_desc}
 AVAILABLE YEARS IN DATASET: {available_years}
-TOTAL UNIVERSITIES PER YEAR: ~{len(year_df) // len(target_years) if len(target_years) > 0 else len(year_df)}
+TOTAL UNIVERSITIES IN THIS DATA: {len(unis_in_data)}
+UNIVERSITIES INCLUDED: {', '.join(unis_in_data[:20])}{'...' if len(unis_in_data) > 20 else ''}
 COLUMNS: {', '.join(available_cols)}
 
 DATA (CSV format):
