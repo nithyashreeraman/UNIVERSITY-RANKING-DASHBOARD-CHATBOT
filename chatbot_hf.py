@@ -233,11 +233,18 @@ def prepare_dataset_context(df: pd.DataFrame, question: str = "") -> str:
                         else:
                             # Numeric rank
                             njit_rank = float(njit_rank_raw)
+
+                            # Convert rank column to numeric for comparison (handles string ranks like USN)
+                            year_df['_temp_rank'] = pd.to_numeric(year_df[rank_col], errors='coerce')
+
                             # Filter to universities within ±25 ranks of NJIT
                             year_df = year_df[
-                                (year_df[rank_col] >= njit_rank - 25) &
-                                (year_df[rank_col] <= njit_rank + 25)
+                                (year_df['_temp_rank'] >= njit_rank - 25) &
+                                (year_df['_temp_rank'] <= njit_rank + 25)
                             ].copy()
+
+                            # Drop temporary column
+                            year_df = year_df.drop(columns=['_temp_rank'])
 
                             # Ensure NJIT itself is in the results
                             if njit_name not in year_df['IPEDS_Name'].values:
