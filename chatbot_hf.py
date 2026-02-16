@@ -31,7 +31,9 @@ def extract_year_from_question(question: str, available_years: list) -> dict:
     # Check for "all years" or aggregate queries
     all_years_keywords = ['all years', 'all available years', 'across all years', 'every year',
                           'overall', 'average', 'mean', 'across years', 'over time',
-                          'historical', 'trend', 'history']
+                          'historical', 'trend', 'history', 'between years', 'any two years',
+                          'biggest change', 'largest change', 'most change', 'compare years',
+                          'change over', 'difference between years']
     if any(keyword in question_lower for keyword in all_years_keywords):
         return {'type': 'all', 'years': available_years}
 
