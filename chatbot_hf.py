@@ -91,6 +91,45 @@ def extract_year_from_question(question: str, available_years: list) -> dict:
     return {'type': 'single', 'years': found_years}
 
 
+def extract_universities_from_question(question: str, available_universities: list) -> list:
+    """
+    Extract university names from question by matching against available universities.
+    Handles common abbreviations and partial matches.
+    """
+    question_lower = question.lower()
+    matched_unis = []
+
+    # Common abbreviations mapping
+    abbreviations = {
+        'njit': 'New Jersey Institute of Technology',
+        'mit': 'Massachusetts Institute of Technology',
+        'caltech': 'California Institute of Technology',
+        'georgia tech': 'Georgia Institute of Technology-Main Campus',
+        'rutgers': 'Rutgers University-New Brunswick',
+        'cmu': 'Carnegie Mellon University',
+        'wpi': 'Worcester Polytechnic Institute',
+        'rpi': 'Rensselaer Polytechnic Institute',
+        'stevens': 'Stevens Institute of Technology'
+    }
+
+    # Check for abbreviations
+    for abbr, full_name in abbreviations.items():
+        if abbr in question_lower and full_name in available_universities:
+            matched_unis.append(full_name)
+
+    # Check for partial matches with actual university names
+    for uni in available_universities:
+        uni_lower = uni.lower()
+        # Check if any significant part of the university name appears in question
+        uni_words = [w for w in uni_lower.split() if len(w) > 3 and w not in ['university', 'institute', 'technology', 'college']]
+        for word in uni_words:
+            if word in question_lower and uni not in matched_unis:
+                matched_unis.append(uni)
+                break
+
+    return matched_unis
+
+
 def prepare_dataset_context(df: pd.DataFrame, question: str = "") -> str:
     """
     Prepare dataset context for the LLM.
@@ -109,6 +148,25 @@ def prepare_dataset_context(df: pd.DataFrame, question: str = "") -> str:
 
     # Filter to target year(s)
     year_df = df[df['Year'].isin(target_years)].copy()
+
+    # Extract universities mentioned in question and filter (to reduce token usage)
+    available_unis = year_df['IPEDS_Name'].unique().tolist()
+    mentioned_unis = extract_universities_from_question(question, available_unis)
+
+    if mentioned_unis:
+        # Filter to only mentioned universities
+        year_df = year_df[year_df['IPEDS_Name'].isin(mentioned_unis)].copy()
+    else:
+        # If no specific universities mentioned, limit to top 50 by rank to avoid token overflow
+        # This handles general questions like "which university is best?"
+        if _CURRENT_AGENCY == "TIMES" and 'Times_Rank' in year_df.columns:
+            year_df = year_df.nsmallest(50, 'Times_Rank')
+        elif _CURRENT_AGENCY == "QS" and 'QS_Rank' in year_df.columns:
+            year_df = year_df.nsmallest(50, 'QS_Rank')
+        elif _CURRENT_AGENCY == "USN" and 'Rank' in year_df.columns:
+            year_df = year_df.nsmallest(50, 'Rank')
+        elif _CURRENT_AGENCY == "Washington" and 'Washington_Rank' in year_df.columns:
+            year_df = year_df.nsmallest(50, 'Washington_Rank')
 
     # Select key columns based on agency
     key_columns = ['IPEDS_Name', 'Year']
@@ -321,27 +379,11 @@ def render_hf_chatbot_ui(times_df, qs_df, usn_df, washington_df, sidebar_selecte
     """Render the Hugging Face chatbot UI"""
     global _DATASETS, _CURRENT_AGENCY
 
-    NJIT_NAME = "New Jersey Institute of Technology"
-
-    # Reconstruct per-tab selections by merging sidebar + manual selections from session state
-    # This matches how each tab calculates its final university list
-    manual_times = st.session_state.get("manual_times_selected_unis", [])
-    times_selected = [NJIT_NAME] + list(set(sidebar_selected_unis + manual_times))
-
-    manual_qs = st.session_state.get("manual_qs_selected_unis", [])
-    qs_selected = [NJIT_NAME] + list(set(sidebar_selected_unis + manual_qs))
-
-    manual_usn = st.session_state.get("manual_usn_selected_unis", [])
-    usn_selected = [NJIT_NAME] + list(set(sidebar_selected_unis + manual_usn))
-
-    manual_washington = st.session_state.get("manual_washington_selected_unis", [])
-    washington_selected = [NJIT_NAME] + list(set(sidebar_selected_unis + manual_washington))
-
-    # Set global datasets (filtered to per-tab selections to stay within token limits)
-    _DATASETS["TIMES"] = times_df[times_df["IPEDS_Name"].isin(times_selected)]
-    _DATASETS["QS"] = qs_df[qs_df["IPEDS_Name"].isin(qs_selected)]
-    _DATASETS["USN"] = usn_df[usn_df["IPEDS_Name"].isin(usn_selected)]
-    _DATASETS["Washington"] = washington_df[washington_df["IPEDS_Name"].isin(washington_selected)]
+    # Store full datasets (filtering happens in prepare_dataset_context based on question)
+    _DATASETS["TIMES"] = times_df
+    _DATASETS["QS"] = qs_df
+    _DATASETS["USN"] = usn_df
+    _DATASETS["Washington"] = washington_df
 
     api_key = None
     try:
