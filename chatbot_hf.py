@@ -549,8 +549,13 @@ def get_ai_response(question: str, api_key: str, model_id: str) -> str:
    Some agencies use rank ranges (e.g., "501-600") where multiple universities share the same rank band.
    When multiple universities have identical ranks, they are equal competitors.
 
-   Example: If NJIT and several other universities all show rank "501-600", list any 5 as competitors
-   and note they're "all tied at rank 501-600".
+   Example format for competitor responses:
+   "NJIT's top 5 competitors (all tied at rank 501-600):
+   - Colorado State University (Rank 501-600)
+   - Stevens Institute of Technology (Rank 501-600)
+   - Rensselaer Polytechnic Institute (Rank 501-600)"
+
+   Always show the rank in parentheses for each university listed.
 
 5. DATA VALIDATION - MANDATORY BEFORE ANSWERING:
    ✅ Double-check ALL numbers before stating them
@@ -570,13 +575,12 @@ def get_ai_response(question: str, api_key: str, model_id: str) -> str:
 
    When asked "Who are X's competitors/peers?":
    ⚠️ COMPETITORS = SIMILAR RANK, NOT BETTER RANK ⚠️
-   STEP 1: Find X's rank number
-   STEP 2: Find universities with ranks CLOSEST to X's rank (within ±5 positions)
-   STEP 3: Prioritize TIED ranks (exact same rank) first
-   STEP 4: Then include ranks just above and below
+   STEP 1: Find X's rank number from CSV
+   STEP 2: List universities with same or similar ranks
+   STEP 3: Show rank in parentheses for each university
 
-   Example: "NJIT Rank 80 → Competitors are Drexel (80-tied), Stevens (80-tied), WPI (84)"
-   ❌ WRONG: "NJIT Rank 80 → Competitors are Villanova (57)" - 57 is BETTER, not a peer
+   Example: "NJIT's competitors are Drexel (Rank 80), Stevens (Rank 80), WPI (Rank 84)"
+   ❌ WRONG: "Competitors are Villanova (57)" - 57 is BETTER, not a peer
 
 7. MULTI-YEAR QUESTIONS:
    • "Last 3 years" → Check data for 3 most recent years
