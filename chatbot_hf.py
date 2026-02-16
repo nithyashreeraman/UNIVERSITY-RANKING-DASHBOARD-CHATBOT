@@ -534,46 +534,18 @@ def get_ai_response(question: str, api_key: str, model_id: str) -> str:
    ✅ Use the CORRECT column type (rate columns for rate questions)
    ✅ Explain what the number means (e.g., "40% Pell rate" not "40 Pell rate")
 
-4. CRITICAL: USE ONLY PROVIDED CSV DATA - NO EXTERNAL KNOWLEDGE
-   🚨 NEVER USE YOUR TRAINING DATA ABOUT UNIVERSITIES 🚨
+4. DATA SOURCE - USE PROVIDED CSV
+   The CSV data provided contains all relevant information. Answer questions based on this data.
+   • If asked about a university in the CSV, provide the data shown
+   • If a university isn't in the filtered CSV but the question is about competitors/comparisons, use the universities that ARE in the CSV
+   • Avoid using general knowledge about universities - focus on the specific data provided
 
-   The CSV data provided to you is the ONLY source of truth. You must:
-   ✅ ONLY mention universities that appear in the provided CSV
-   ✅ ONLY use rank numbers that appear in the provided CSV for those universities
-   ✅ If a university is NOT in the CSV, say "University not in dataset"
-   ✅ If you don't see the data in the CSV, say "Data not provided"
+4a. TIED RANKS (STRING RANGES):
+   Some agencies use rank ranges (e.g., "501-600") where multiple universities share the same rank band.
+   When multiple universities have identical ranks, they are equal competitors.
 
-   ❌ DO NOT use your memory of university rankings from training data
-   ❌ DO NOT make up ranks for universities not in the CSV
-   ❌ DO NOT assume ranks based on university reputation
-
-   VALIDATION CHECKLIST before every response:
-   1. Is this university's name in the CSV? → If NO, don't mention it
-   2. Is this rank number in the CSV for this university? → If NO, don't state it
-   3. Am I using data from the CSV or my memory? → ONLY use CSV
-
-4a. HANDLING TIED RANKS (STRING RANGES):
-   Some agencies use rank ranges like "501-600" where MULTIPLE universities share the SAME rank.
-
-   When asked "Who are X's competitors?" and the CSV shows:
-   - University A: Rank "501-600"
-   - University B: Rank "501-600"
-   - University C: Rank "501-600"
-   - ... (10+ universities with same rank)
-
-   YOUR ANSWER MUST:
-   ✅ List universities from the CSV with same/similar rank strings
-   ✅ Say "All tied at rank 501-600" to explain why they're equivalent
-   ✅ Pick any 5 from the CSV list as they're all equal competitors
-
-   ❌ DO NOT use universities with different ranks like "145" or "103"
-   ❌ DO NOT make up universities not in the CSV
-
-   Example for TIMES with string ranges:
-   Question: "Who are NJIT's top 5 competitors"
-   CSV shows: NJIT, Colorado State, Georgia State, Missouri S&T, Stevens all have rank "501-600"
-   CORRECT: "NJIT's competitors (all tied at 501-600): Colorado State, Georgia State, Missouri S&T, Stevens..."
-   WRONG: "NJIT rank 145, competitors: Rice (103), Case Western (145)" ← These aren't in the CSV!
+   Example: If NJIT and several other universities all show rank "501-600", list any 5 as competitors
+   and note they're "all tied at rank 501-600".
 
 5. DATA VALIDATION - MANDATORY BEFORE ANSWERING:
    ✅ Double-check ALL numbers before stating them
@@ -629,14 +601,12 @@ QUESTION: {expanded_question}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 REMINDER BEFORE ANSWERING:
-1. 🚨 USE ONLY THE CSV DATA ABOVE - CHECK every university name and rank number appears in CSV
-2. ⚠️ LOWER rank number = BETTER ranking (Rank 50 beats Rank 200)
-3. ⚠️ DISTINGUISH metric types: Number_of_X = COUNT (not rate), X_rate = PERCENTAGE, X_gap = DIFFERENCE
-4. ⚠️ TIED RANKS: If multiple universities have same rank (e.g., "501-600"), list them as equal competitors
-5. ✅ Verify all numbers from the CSV data above - DO NOT use your training data memory
-6. ✅ For comparisons, check which university has LOWER rank number
-7. ✅ For multi-year questions, use ALL relevant years from data
-8. ✅ Never make up data - only use what's provided above
+1. Answer based on the CSV data provided above
+2. LOWER rank number = BETTER ranking (Rank 50 beats Rank 200)
+3. Distinguish metric types: Number_of_X = COUNT, X_rate = PERCENTAGE, X_gap = DIFFERENCE
+4. For tied ranks (same rank like "501-600"), list universities as equal competitors
+5. For comparisons, check which university has LOWER rank number
+6. For multi-year questions, use ALL relevant years from data
 
 Answer in 2-4 sentences max. Be brief, direct, and ACCURATE."""
 
