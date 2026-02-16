@@ -406,6 +406,39 @@ def call_hf_model(client: InferenceClient, system_prompt: str, user_message: str
             return f"Error: {error_msg}"
 
 
+def expand_abbreviations_in_question(question: str) -> str:
+    """
+    Expand university abbreviations to full IPEDS names in the question.
+    This helps the model find universities in the CSV data.
+    """
+    # Map abbreviations to full IPEDS names
+    abbreviations = {
+        'NJIT': 'New Jersey Institute of Technology',
+        'MIT': 'Massachusetts Institute of Technology',
+        'Caltech': 'California Institute of Technology',
+        'Georgia Tech': 'Georgia Institute of Technology-Main Campus',
+        'Rutgers': 'Rutgers University-New Brunswick',
+        'CMU': 'Carnegie Mellon University',
+        'WPI': 'Worcester Polytechnic Institute',
+        'RPI': 'Rensselaer Polytechnic Institute',
+        'Stevens': 'Stevens Institute of Technology',
+        'UT Austin': 'The University of Texas at Austin',
+        'Penn State': 'The Pennsylvania State University',
+        'Ohio State': 'Ohio State University-Main Campus',
+        'Michigan State': 'Michigan State University',
+        'Case Western': 'Case Western Reserve University'
+    }
+
+    expanded_question = question
+    for abbr, full_name in abbreviations.items():
+        # Case-insensitive replacement, preserve original case in output
+        import re
+        pattern = re.compile(re.escape(abbr), re.IGNORECASE)
+        expanded_question = pattern.sub(full_name, expanded_question)
+
+    return expanded_question
+
+
 def get_ai_response(question: str, api_key: str, model_id: str) -> str:
     """
     Main function to get AI response.
@@ -417,8 +450,11 @@ def get_ai_response(question: str, api_key: str, model_id: str) -> str:
     if df is None:
         return "Error: No dataset loaded."
 
+    # Expand abbreviations in question so model can find universities in CSV
+    expanded_question = expand_abbreviations_in_question(question)
+
     # Prepare dataset context (auto-detects year from question)
-    dataset_context = prepare_dataset_context(df, question)
+    dataset_context = prepare_dataset_context(df, expanded_question)
 
     # System prompt with ranking rules
     system_prompt = """You are a university rankings data analyst. You help users understand university ranking data with EXTREME ACCURACY.
@@ -574,7 +610,7 @@ RESPONSE STYLE:
     user_message = f"""{dataset_context}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-QUESTION: {question}
+QUESTION: {expanded_question}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 REMINDER BEFORE ANSWERING:
