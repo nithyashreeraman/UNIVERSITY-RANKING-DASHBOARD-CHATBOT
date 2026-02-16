@@ -209,8 +209,8 @@ def prepare_dataset_context(df: pd.DataFrame, question: str = "") -> str:
                         if pd.isna(njit_rank_raw):
                             # No rank available, skip filtering
                             pass
-                        elif isinstance(njit_rank_raw, str) and '-' in str(njit_rank_raw):
-                            # Parse range like "501-600" to get midpoint
+                        elif isinstance(njit_rank_raw, str) and ('-' in str(njit_rank_raw) or '–' in str(njit_rank_raw)):
+                            # Parse range like "501-600" or "501–600" to get midpoint (handles both hyphen and en-dash)
                             parts = str(njit_rank_raw).replace("–", "-").split("-")
                             njit_rank_mid = (int(parts[0]) + int(parts[1])) // 2
 
@@ -219,7 +219,7 @@ def prepare_dataset_context(df: pd.DataFrame, question: str = "") -> str:
                             def parse_rank_to_mid(rank_val):
                                 if pd.isna(rank_val):
                                     return float('inf')
-                                if isinstance(rank_val, str) and '-' in str(rank_val):
+                                if isinstance(rank_val, str) and ('-' in str(rank_val) or '–' in str(rank_val)):
                                     try:
                                         p = str(rank_val).replace("–", "-").split("-")
                                         return (int(p[0]) + int(p[1])) // 2
