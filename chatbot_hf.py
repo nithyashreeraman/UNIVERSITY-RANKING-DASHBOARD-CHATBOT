@@ -230,6 +230,13 @@ def prepare_dataset_context(df: pd.DataFrame, question: str = "") -> str:
                                 (year_df['_temp_numeric_rank'] <= njit_rank_mid + 50)
                             ].copy()
                             year_df = year_df.drop(columns=['_temp_numeric_rank'])
+
+                            # Ensure NJIT itself is in the results
+                            if njit_name not in year_df['IPEDS_Name'].values:
+                                # Add NJIT back if it was filtered out
+                                njit_row = df[(df['IPEDS_Name'] == njit_name) & (df['Year'].isin(target_years))]
+                                if not njit_row.empty:
+                                    year_df = pd.concat([year_df, njit_row], ignore_index=True)
                         else:
                             # Numeric rank
                             njit_rank = float(njit_rank_raw)
