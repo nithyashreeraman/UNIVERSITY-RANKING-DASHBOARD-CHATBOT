@@ -203,17 +203,31 @@ def prepare_dataset_context(df: pd.DataFrame, question: str = "") -> str:
                         elif isinstance(njit_rank_raw, str) and '-' in str(njit_rank_raw):
                             # Parse range like "501-600" to get midpoint
                             parts = str(njit_rank_raw).replace("–", "-").split("-")
-                            njit_rank = (int(parts[0]) + int(parts[1])) // 2
+                            njit_rank_mid = (int(parts[0]) + int(parts[1])) // 2
 
-                            # Filter using numeric comparison (works for both numeric and range columns)
+                            # For string ranges, we need to parse all ranks to filter properly
+                            # Create a temporary numeric column for filtering
+                            def parse_rank_to_mid(rank_val):
+                                if pd.isna(rank_val):
+                                    return float('inf')
+                                if isinstance(rank_val, str) and '-' in str(rank_val):
+                                    try:
+                                        p = str(rank_val).replace("–", "-").split("-")
+                                        return (int(p[0]) + int(p[1])) // 2
+                                    except:
+                                        return float('inf')
+                                try:
+                                    return float(rank_val)
+                                except:
+                                    return float('inf')
+
+                            year_df['_temp_numeric_rank'] = year_df[rank_col].apply(parse_rank_to_mid)
+                            # Filter to universities within ±50 ranks of NJIT (wider range for string ranks)
                             year_df = year_df[
-                                year_df[rank_col].notna()
+                                (year_df['_temp_numeric_rank'] >= njit_rank_mid - 50) &
+                                (year_df['_temp_numeric_rank'] <= njit_rank_mid + 50)
                             ].copy()
-                            # Keep top 50 universities (handles string ranges by sorting as strings)
-                            try:
-                                year_df = year_df.nsmallest(50, rank_col)
-                            except (TypeError, ValueError):
-                                year_df = year_df.sort_values(rank_col).head(50)
+                            year_df = year_df.drop(columns=['_temp_numeric_rank'])
                         else:
                             # Numeric rank
                             njit_rank = float(njit_rank_raw)
