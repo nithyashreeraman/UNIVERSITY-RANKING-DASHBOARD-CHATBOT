@@ -179,8 +179,11 @@ def prepare_dataset_context(df: pd.DataFrame, question: str = "") -> str:
         # e.g., "Who are NJIT's competitors?"
         njit_name = "New Jersey Institute of Technology"
 
-        # Ensure NJIT is in the dataset
-        if njit_name in available_unis:
+        # Debug: Check if NJIT is in the year-filtered dataset
+        if njit_name not in available_unis:
+            # NJIT not in this agency's dataset for this year - send all available data
+            pass  # Fall through to else clause to send top 50
+        else:
             # Find NJIT's rank and filter to nearby universities
             rank_col = None
             if _CURRENT_AGENCY == "TIMES" and 'Times_Rank' in year_df.columns:
