@@ -193,12 +193,35 @@ def prepare_dataset_context(df: pd.DataFrame, question: str = "") -> str:
             if rank_col:
                 njit_data = year_df[year_df['IPEDS_Name'] == njit_name]
                 if not njit_data.empty:
-                    njit_rank = njit_data[rank_col].iloc[0]
-                    # Filter to universities within ±25 ranks of NJIT
-                    year_df = year_df[
-                        (year_df[rank_col] >= njit_rank - 25) &
-                        (year_df[rank_col] <= njit_rank + 25)
-                    ].copy()
+                    njit_rank_raw = njit_data[rank_col].iloc[0]
+
+                    # Parse rank (handle string ranges like "501-600" or numeric values)
+                    try:
+                        if pd.isna(njit_rank_raw):
+                            # No rank available, skip filtering
+                            pass
+                        elif isinstance(njit_rank_raw, str) and '-' in str(njit_rank_raw):
+                            # Parse range like "501-600" to get midpoint
+                            parts = str(njit_rank_raw).replace("–", "-").split("-")
+                            njit_rank = (int(parts[0]) + int(parts[1])) // 2
+
+                            # Filter using numeric comparison (works for both numeric and range columns)
+                            year_df = year_df[
+                                year_df[rank_col].notna()
+                            ].copy()
+                            # Keep top 50 universities around NJIT's rank
+                            year_df = year_df.nsmallest(50, rank_col)
+                        else:
+                            # Numeric rank
+                            njit_rank = float(njit_rank_raw)
+                            # Filter to universities within ±25 ranks of NJIT
+                            year_df = year_df[
+                                (year_df[rank_col] >= njit_rank - 25) &
+                                (year_df[rank_col] <= njit_rank + 25)
+                            ].copy()
+                    except (ValueError, TypeError, IndexError):
+                        # If parsing fails, send top 50
+                        year_df = year_df.nsmallest(50, rank_col)
     else:
         # General discovery question → send top 50 by rank
         # This handles: "Which is best?", "Top universities"
