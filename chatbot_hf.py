@@ -160,8 +160,15 @@ def prepare_dataset_context(df: pd.DataFrame, question: str = "") -> str:
     needs_context = any(keyword in question_lower for keyword in discovery_keywords)
     needs_competitors = any(keyword in question_lower for keyword in competitor_keywords)
 
+    # Check for geographic filtering (e.g., "in NJ", "in New Jersey")
+    nj_keywords = [' nj ', ' new jersey', 'in nj', 'in new jersey']
+    needs_nj_filter = any(keyword in question_lower for keyword in nj_keywords)
+
     # Smart filtering logic:
-    if mentioned_unis and len(mentioned_unis) >= 2 and not needs_context and not needs_competitors:
+    if needs_nj_filter and 'New_Jersey_University' in year_df.columns:
+        # Geographic filter: send all NJ universities
+        year_df = year_df[year_df['New_Jersey_University'] == 'Yes'].copy()
+    elif mentioned_unis and len(mentioned_unis) >= 2 and not needs_context and not needs_competitors:
         # Direct comparison between 2+ specific universities (e.g., "NJIT vs MIT score")
         year_df = year_df[year_df['IPEDS_Name'].isin(mentioned_unis)].copy()
     elif mentioned_unis and len(mentioned_unis) == 1 and not needs_context and not needs_competitors:
