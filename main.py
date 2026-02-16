@@ -146,6 +146,17 @@ if selected_peer_types:
         peer_groups_df['PEER_TYPE'].isin(selected_peer_types)
     ]['PEER_NAME'].tolist()
 
+# Clear per-tab widget state when peer groups change (to update defaults)
+if "previous_peer_types" not in st.session_state:
+    st.session_state.previous_peer_types = []
+
+if st.session_state.previous_peer_types != selected_peer_types:
+    # Peer groups changed - clear per-tab selections so new defaults take effect
+    for key in ["times_optional_unis", "qs_optional_unis", "usn_optional_unis", "washington_optional_unis"]:
+        if key in st.session_state:
+            del st.session_state[key]
+    st.session_state.previous_peer_types = selected_peer_types
+
 st.sidebar.markdown("---")
 st.sidebar.header("🏫 Individual Universities")
 
