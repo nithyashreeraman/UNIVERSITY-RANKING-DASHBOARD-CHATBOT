@@ -209,8 +209,11 @@ def prepare_dataset_context(df: pd.DataFrame, question: str = "") -> str:
                             year_df = year_df[
                                 year_df[rank_col].notna()
                             ].copy()
-                            # Keep top 50 universities around NJIT's rank
-                            year_df = year_df.nsmallest(50, rank_col)
+                            # Keep top 50 universities (handles string ranges by sorting as strings)
+                            try:
+                                year_df = year_df.nsmallest(50, rank_col)
+                            except (TypeError, ValueError):
+                                year_df = year_df.sort_values(rank_col).head(50)
                         else:
                             # Numeric rank
                             njit_rank = float(njit_rank_raw)
@@ -221,18 +224,30 @@ def prepare_dataset_context(df: pd.DataFrame, question: str = "") -> str:
                             ].copy()
                     except (ValueError, TypeError, IndexError):
                         # If parsing fails, send top 50
-                        year_df = year_df.nsmallest(50, rank_col)
+                        try:
+                            year_df = year_df.nsmallest(50, rank_col)
+                        except (TypeError, ValueError):
+                            year_df = year_df.sort_values(rank_col).head(50)
     else:
         # General discovery question → send top 50 by rank
         # This handles: "Which is best?", "Top universities"
+        rank_col = None
         if _CURRENT_AGENCY == "TIMES" and 'Times_Rank' in year_df.columns:
-            year_df = year_df.nsmallest(50, 'Times_Rank')
+            rank_col = 'Times_Rank'
         elif _CURRENT_AGENCY == "QS" and 'QS_Rank' in year_df.columns:
-            year_df = year_df.nsmallest(50, 'QS_Rank')
+            rank_col = 'QS_Rank'
         elif _CURRENT_AGENCY == "USN" and 'Rank' in year_df.columns:
-            year_df = year_df.nsmallest(50, 'Rank')
+            rank_col = 'Rank'
         elif _CURRENT_AGENCY == "Washington" and 'Washington_Rank' in year_df.columns:
-            year_df = year_df.nsmallest(50, 'Washington_Rank')
+            rank_col = 'Washington_Rank'
+
+        if rank_col:
+            try:
+                # Try numeric sorting first (works for USN, Washington)
+                year_df = year_df.nsmallest(50, rank_col)
+            except (TypeError, ValueError):
+                # If that fails (TIMES/QS with string ranges), sort as strings then take first 50
+                year_df = year_df.sort_values(rank_col).head(50)
 
     # Select key columns based on agency
     key_columns = ['IPEDS_Name', 'Year']
