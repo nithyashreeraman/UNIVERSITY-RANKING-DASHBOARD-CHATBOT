@@ -161,6 +161,10 @@ def prepare_dataset_context(df: pd.DataFrame, question: str = "") -> str:
     available_unis = year_df['IPEDS_Name'].unique().tolist()
     mentioned_unis = extract_universities_from_question(question, available_unis)
 
+    # DIAGNOSTIC: Check if NJIT is in the dataset
+    njit_name = "New Jersey Institute of Technology"
+    njit_present = njit_name in available_unis
+
     # Check if question needs discovery/comparison context (not just specific university lookup)
     question_lower = question.lower()
     discovery_keywords = ['best', 'top', 'which', 'who']
@@ -369,11 +373,15 @@ def prepare_dataset_context(df: pd.DataFrame, question: str = "") -> str:
     # Get list of universities in the filtered dataset for debug visibility
     unis_in_data = sorted(year_df['IPEDS_Name'].unique().tolist())
 
+    # Check if NJIT is in filtered data
+    njit_check = "YES - New Jersey Institute of Technology is in this data" if njit_present else "NO - New Jersey Institute of Technology is NOT in this data"
+
     context = f"""
 DATASET: {_CURRENT_AGENCY} University Rankings
 SHOWING DATA FOR {year_desc}
 AVAILABLE YEARS IN DATASET: {available_years}
 TOTAL UNIVERSITIES IN THIS DATA: {len(unis_in_data)}
+NJIT PRESENT: {njit_check}
 UNIVERSITIES INCLUDED: {', '.join(unis_in_data[:20])}{'...' if len(unis_in_data) > 20 else ''}
 COLUMNS: {', '.join(available_cols)}
 
