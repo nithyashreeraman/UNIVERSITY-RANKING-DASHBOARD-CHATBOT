@@ -117,13 +117,15 @@ def extract_universities_from_question(question: str, available_universities: li
         if abbr in question_lower and full_name in available_universities:
             matched_unis.append(full_name)
 
-    # Check for partial matches with actual university names
+    # Check for partial matches with actual university names (use word boundaries to avoid false positives)
     for uni in available_universities:
         uni_lower = uni.lower()
         # Check if any significant part of the university name appears in question
-        uni_words = [w for w in uni_lower.split() if len(w) > 3 and w not in ['university', 'institute', 'technology', 'college']]
+        excluded = {'university', 'institute', 'technology', 'college', 'school', 'state', 'north', 'south', 'east', 'west'}
+        uni_words = [w for w in uni_lower.split() if len(w) > 4 and w not in excluded]
         for word in uni_words:
-            if word in question_lower and uni not in matched_unis:
+            # Use word boundary check to avoid "tech" matching "technology"
+            if re.search(r'\b' + re.escape(word) + r'\b', question_lower) and uni not in matched_unis:
                 matched_unis.append(uni)
                 break
 
@@ -610,7 +612,7 @@ QUESTION: {expanded_question}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 REMINDER BEFORE ANSWERING:
-1. ⚠️ ONLY use universities listed in the CSV above - do not mention any university not in the CSV
+1. Answer using the universities and ranks shown in the CSV data above
 2. LOWER rank number = BETTER ranking (Rank 50 beats Rank 200)
 3. Distinguish metric types: Number_of_X = COUNT, X_rate = PERCENTAGE, X_gap = DIFFERENCE
 4. For tied ranks (same rank like "501-600"), list universities as equal competitors
