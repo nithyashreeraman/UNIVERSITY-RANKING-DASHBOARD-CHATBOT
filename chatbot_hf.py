@@ -151,11 +151,11 @@ def prepare_dataset_context(df: pd.DataFrame, question: str = "") -> str:
     # Filter to target year(s) - ensure we're only getting the requested years
     year_df = df[df['Year'].isin(target_years)].copy()
 
-    # Verify filtering worked - if multiple years still present, force to latest only
+    # Verify filtering worked - only force to latest year for single-year queries
     actual_years = sorted(year_df['Year'].unique().tolist())
-    if len(actual_years) > 1 and year_info['type'] != 'all':
-        # Should not have multiple years unless explicitly requested
-        # Force to latest year only to avoid model confusion
+    multi_year_types = {'all', 'multiple', 'range', 'relative'}
+    if len(actual_years) > 1 and year_info['type'] not in multi_year_types:
+        # Single year question got multiple years - force to latest only
         year_df = year_df[year_df['Year'] == max(actual_years)].copy()
         target_years = [max(actual_years)]
 
