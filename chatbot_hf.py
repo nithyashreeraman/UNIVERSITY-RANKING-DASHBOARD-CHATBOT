@@ -473,10 +473,12 @@ def get_ai_response(question: str, api_key: str, model_id: str) -> str:
     # Prepare dataset context (auto-detects year from question)
     dataset_context = prepare_dataset_context(df, expanded_question)
 
-    # Build a quick rank lookup for universities mentioned in the question
-    # to inject directly into the prompt (prevents model from ignoring CSV data)
+    # Pre-compute key data for mentioned universities and inject directly into prompt
+    # This bypasses unreliable CSV parsing by the model
     rank_col_map = {"TIMES": "Times_Rank", "QS": "QS_Rank", "USN": "Rank", "Washington": "Washington_Rank"}
+    score_col_map = {"TIMES": "Overall", "QS": "Overall_Score", "USN": "Overall_scores", "Washington": None}
     rank_col = rank_col_map.get(_CURRENT_AGENCY)
+    score_col = score_col_map.get(_CURRENT_AGENCY)
     rank_summary_lines = []
     if rank_col and rank_col in df.columns:
         latest_year = df['Year'].max()
@@ -487,7 +489,12 @@ def get_ai_response(question: str, api_key: str, model_id: str) -> str:
             row = latest_df[latest_df['IPEDS_Name'] == uni]
             if not row.empty:
                 rank_val = str(row[rank_col].iloc[0]).replace('\u2013', '-')
-                rank_summary_lines.append(f"  - {uni}: Rank {rank_val}")
+                line = f"  - {uni}: Rank {rank_val}"
+                if score_col and score_col in row.columns:
+                    score_val = row[score_col].iloc[0]
+                    if pd.notna(score_val):
+                        line += f", Score {score_val}"
+                rank_summary_lines.append(line)
     rank_summary = "\n".join(rank_summary_lines) if rank_summary_lines else ""
 
     # System prompt with ranking rules
