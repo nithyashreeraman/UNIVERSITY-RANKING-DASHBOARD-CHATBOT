@@ -814,7 +814,10 @@ def render_hf_chatbot_ui(times_df, qs_df, usn_df, washington_df, sidebar_selecte
             if msg["role"] == "user":
                 st.sidebar.markdown(f"**You:** {msg['content']}")
             else:
-                st.sidebar.markdown(f"**AI:** {msg['content']}")
+                content = msg['content']
+                # Ensure each bullet point is on its own line
+                content = re.sub(r'\s*•\s*', '\n\n• ', content).strip()
+                st.sidebar.markdown(f"**AI:**\n\n{content}")
             st.sidebar.markdown("---")
     else:
         st.sidebar.info(f"""{selected_model}""")
