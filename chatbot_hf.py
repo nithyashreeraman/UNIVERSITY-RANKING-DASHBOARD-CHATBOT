@@ -691,10 +691,18 @@ REMINDER BEFORE ANSWERING:
 
 FORMAT RULES (strictly follow):
 - START with the answer immediately — NO "To determine...", NO "We look at...", NO column explanations
-- List questions → bullet list with values, then 1-line conclusion
-- Single factual → 1-2 sentences only
-- Comparison → bullet per university + 1-line conclusion
-- NEVER explain your reasoning or methodology — just give the result with numbers"""
+- NEVER explain your reasoning or methodology — just give the result with numbers
+- Use markdown formatting: **bold** for university names and key values
+- Use `-` markdown bullet points (NOT • symbol) so they render with proper spacing
+- Single factual → 1-2 sentences, plain prose
+- List/ranking questions → `-` bullet per item with value bolded, then **Conclusion:** line
+- Comparison → `-` bullet per university with key metrics bolded, then **Conclusion:** line
+
+Example output style for a list question:
+- **Berea College**: Pell gap **-0.24** — best equity
+- **Cal State LA**: Pell gap **-0.02** — good equity
+
+**Conclusion:** Berea College has the smallest Pell gap."""
 
     try:
         client = InferenceClient(model=model_id, token=api_key)
@@ -815,8 +823,10 @@ def render_hf_chatbot_ui(times_df, qs_df, usn_df, washington_df, sidebar_selecte
                 st.sidebar.markdown(f"**You:** {msg['content']}")
             else:
                 content = msg['content']
-                # Ensure each bullet point is on its own line
-                content = re.sub(r'\s*•\s*', '\n\n• ', content).strip()
+                # Convert any • symbols to markdown - bullets for proper rendering
+                content = re.sub(r'\s*•\s*', '\n- ', content).strip()
+                # Ensure markdown - bullets each start on their own line
+                content = re.sub(r'\s*\n- ', '\n\n- ', content).strip()
                 st.sidebar.markdown(f"**AI:**\n\n{content}")
             st.sidebar.markdown("---")
     else:
