@@ -377,27 +377,17 @@ def prepare_dataset_context(df: pd.DataFrame, question: str = "") -> str:
     else:
         year_desc = f"YEAR: {target_years[0]}"
 
-    # Get list of universities in the filtered dataset for debug visibility
-    unis_in_data = sorted(year_df['IPEDS_Name'].unique().tolist())
-
-    # Check if NJIT is in filtered data
-    njit_check = "YES - New Jersey Institute of Technology is in this data" if njit_present else "NO - New Jersey Institute of Technology is NOT in this data"
-
     # Add filtering note for competitor questions
     filter_note = ""
     if needs_competitors and njit_present:
-        filter_note = "\n⚠️ IMPORTANT: This data has been PRE-FILTERED to show only universities with similar ranks to New Jersey Institute of Technology. All universities in this CSV are appropriate competitors - just list them directly from the data below."
+        filter_note = "\nNOTE: Data pre-filtered to universities with similar ranks. List all universities in the CSV as competitors."
 
     context = f"""
 DATASET: {_CURRENT_AGENCY} University Rankings
-SHOWING DATA FOR {year_desc}
-AVAILABLE YEARS IN DATASET: {available_years}
-TOTAL UNIVERSITIES IN THIS DATA: {len(unis_in_data)}
-NJIT PRESENT: {njit_check}
-UNIVERSITIES INCLUDED: {', '.join(unis_in_data[:20])}{'...' if len(unis_in_data) > 20 else ''}{filter_note}
+{year_desc}
 COLUMNS: {', '.join(available_cols)}
-
-DATA (CSV format):
+{filter_note}
+DATA:
 {csv_data}
 """
     return context
@@ -482,6 +472,23 @@ def get_ai_response(question: str, api_key: str, model_id: str) -> str:
 
     # Prepare dataset context (auto-detects year from question)
     dataset_context = prepare_dataset_context(df, expanded_question)
+
+    # Build a quick rank lookup for universities mentioned in the question
+    # to inject directly into the prompt (prevents model from ignoring CSV data)
+    rank_col_map = {"TIMES": "Times_Rank", "QS": "QS_Rank", "USN": "Rank", "Washington": "Washington_Rank"}
+    rank_col = rank_col_map.get(_CURRENT_AGENCY)
+    rank_summary_lines = []
+    if rank_col and rank_col in df.columns:
+        latest_year = df['Year'].max()
+        latest_df = df[df['Year'] == latest_year]
+        available_unis = latest_df['IPEDS_Name'].unique().tolist()
+        mentioned = extract_universities_from_question(expanded_question, available_unis)
+        for uni in mentioned:
+            row = latest_df[latest_df['IPEDS_Name'] == uni]
+            if not row.empty:
+                rank_val = str(row[rank_col].iloc[0]).replace('\u2013', '-')
+                rank_summary_lines.append(f"  - {uni}: Rank {rank_val}")
+    rank_summary = "\n".join(rank_summary_lines) if rank_summary_lines else ""
 
     # System prompt with ranking rules
     system_prompt = """You are a university rankings data analyst. You help users understand university ranking data with EXTREME ACCURACY.
@@ -615,7 +622,7 @@ RESPONSE STYLE:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 QUESTION: {expanded_question}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
+{f"UNIVERSITY RANKS FROM DATA:{chr(10)}{rank_summary}" if rank_summary else ""}
 REMINDER BEFORE ANSWERING:
 1. Answer using the universities and ranks shown in the CSV data above
 2. LOWER rank number = BETTER ranking (Rank 50 beats Rank 200)
