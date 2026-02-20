@@ -564,16 +564,23 @@ def get_ai_response(question: str, api_key: str, model_id: str) -> str:
       • Examples: Research_expenditures_(M), Net_price
       • Context-dependent: Higher spending may be good (research), lower may be good (net price/affordability)
 
-   PELL COLUMN GUIDE (use the correct one based on question):
-   • "Pell rate" or "Pell graduation rate" → use Pell_Graduation_Rate (USN) — higher % is better
-   • "Pell gap" or "Pell equity" → use Pell/non-Pell_graduation_gap (Washington) — smaller/closer to 0 is better
-   • "Pell enrollment" → use Actual_vs._predicted_Pell_enrollment (Washington)
-   • "Number of Pell" or "Pell count" → use Number_of_Pell_recipients — this is a COUNT not a rate
+   PELL COLUMN GUIDE — each metric belongs to a SPECIFIC agency dataset:
+   • "Pell rate" or "Pell graduation rate" → Pell_Graduation_Rate — only in USN dataset
+   • "Pell gap" or "Pell equity" → Pell/non-Pell_graduation_gap — only in Washington dataset
+   • "Pell enrollment" → Actual_vs._predicted_Pell_enrollment — only in Washington dataset
+   • "Number of Pell" or "Pell count" → Number_of_Pell_recipients — COUNT not a rate
+
    ❌ Never use Number_of_Pell_recipients to answer "pell rate" questions
+   ❌ Never use 8-year_graduation_rate or other columns as a proxy for Pell rate
+   ❌ Never guess or substitute — if the column is not in the current dataset, say so clearly
+
+   If the requested Pell metric is NOT in the current dataset:
+   → Say: "Pell_Graduation_Rate is available in the USN dataset. Please switch to the USN tab to compare Pell graduation rates."
+   → Do NOT try to approximate or use a different column as a substitute
 
    When answering "which has good [metric]" questions:
    ✅ Identify if they're asking about COUNT, RATE, or GAP
-   ✅ Use the CORRECT column (see Pell guide above)
+   ✅ Use the CORRECT column — only if it exists in the current dataset
    ✅ State the value clearly (e.g., "73% Pell graduation rate")
 
 4. DATA SOURCE - USE PROVIDED CSV
