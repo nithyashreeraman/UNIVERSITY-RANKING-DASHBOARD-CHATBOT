@@ -564,10 +564,17 @@ def get_ai_response(question: str, api_key: str, model_id: str) -> str:
       • Examples: Research_expenditures_(M), Net_price
       • Context-dependent: Higher spending may be good (research), lower may be good (net price/affordability)
 
+   PELL COLUMN GUIDE (use the correct one based on question):
+   • "Pell rate" or "Pell graduation rate" → use Pell_Graduation_Rate (USN) — higher % is better
+   • "Pell gap" or "Pell equity" → use Pell/non-Pell_graduation_gap (Washington) — smaller/closer to 0 is better
+   • "Pell enrollment" → use Actual_vs._predicted_Pell_enrollment (Washington)
+   • "Number of Pell" or "Pell count" → use Number_of_Pell_recipients — this is a COUNT not a rate
+   ❌ Never use Number_of_Pell_recipients to answer "pell rate" questions
+
    When answering "which has good [metric]" questions:
    ✅ Identify if they're asking about COUNT, RATE, or GAP
-   ✅ Use the CORRECT column type (rate columns for rate questions)
-   ✅ Explain what the number means (e.g., "40% Pell rate" not "40 Pell rate")
+   ✅ Use the CORRECT column (see Pell guide above)
+   ✅ State the value clearly (e.g., "73% Pell graduation rate")
 
 4. DATA SOURCE - USE PROVIDED CSV
    The CSV data provided contains all relevant information. Answer questions based on this data.
@@ -626,11 +633,29 @@ def get_ai_response(question: str, api_key: str, model_id: str) -> str:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 RESPONSE STYLE:
-- Keep responses SHORT and PRECISE (2-4 sentences maximum)
-- For comparisons: Use bullet points, show only KEY metrics
-- End with a 1-line CONCLUSION that clearly states who performs better
 - Use ONLY data from the provided CSV - NO external knowledge
-- Show specific numbers from the data to support your answer"""
+- Show specific numbers from the data to support your answer
+- Do NOT add unnecessary caveats, disclaimers, or methodology explanations
+
+FORMAT BY QUESTION TYPE:
+• Simple factual (rank, score, single value): 1-2 sentences, plain prose
+  Example: "NJIT's QS rank in 2026 is 801-850 with an overall score of 30.2."
+
+• Comparison between universities: bullet list per university, end with a 1-line conclusion
+  Example:
+  • NJIT: Rank 501-600, Overall 38.5
+  • Stevens: Rank 401-500, Overall 42.1
+  Conclusion: Stevens is ranked higher than NJIT in 2026.
+
+• List questions (top N, competitors): bullet list with rank shown
+  Example:
+  • Colorado State University (Rank 501-600)
+  • Stevens Institute of Technology (Rank 501-600)
+
+• Trend/improvement questions: brief 2-3 sentence summary in prose, no bullets needed
+
+❌ Do NOT use bullet points for simple single-answer questions
+❌ Do NOT write long paragraphs for comparisons or lists"""
 
     # User message with context and question
     user_message = f"""{dataset_context}
