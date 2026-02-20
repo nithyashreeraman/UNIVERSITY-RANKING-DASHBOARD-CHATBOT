@@ -689,7 +689,12 @@ REMINDER BEFORE ANSWERING:
 5. For comparisons, check which university has LOWER rank number
 6. For multi-year questions, use ALL relevant years from data
 
-Answer in 2-4 sentences max. Be brief, direct, and ACCURATE."""
+FORMAT RULES (strictly follow):
+- START with the answer immediately — NO "To determine...", NO "We look at...", NO column explanations
+- List questions → bullet list with values, then 1-line conclusion
+- Single factual → 1-2 sentences only
+- Comparison → bullet per university + 1-line conclusion
+- NEVER explain your reasoning or methodology — just give the result with numbers"""
 
     try:
         client = InferenceClient(model=model_id, token=api_key)
