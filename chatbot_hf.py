@@ -670,7 +670,9 @@ FORMAT BY QUESTION TYPE:
 • Trend/improvement questions: brief 2-3 sentence summary in prose, no bullets needed
 
 ❌ Do NOT use bullet points for simple single-answer questions
-❌ Do NOT write long paragraphs for comparisons or lists"""
+❌ Do NOT write long paragraphs for comparisons or lists
+❌ Do NOT explain which column you are using or why — just use it and show the result
+❌ Do NOT start with "To determine..." or "We look at..." — go straight to the answer"""
 
     # User message with context and question
     user_message = f"""{dataset_context}
