@@ -362,6 +362,11 @@ def prepare_dataset_context(df: pd.DataFrame, question: str = "") -> str:
     # Sort by Year and University for consistency
     year_df = year_df.sort_values(['Year', 'IPEDS_Name'])
 
+    # Replace en-dashes (–) with regular hyphens (-) in all string columns
+    # TIMES dataset uses en-dash in ranks like "501–600" which confuses the model
+    for col in year_df.select_dtypes(include='object').columns:
+        year_df[col] = year_df[col].astype(str).str.replace('\u2013', '-', regex=False)
+
     csv_data = year_df.to_csv(index=False)
 
     # Build context message
