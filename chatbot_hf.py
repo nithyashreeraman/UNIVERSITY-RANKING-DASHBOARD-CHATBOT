@@ -473,28 +473,37 @@ def get_ai_response(question: str, api_key: str, model_id: str) -> str:
     # Prepare dataset context (auto-detects year from question)
     dataset_context = prepare_dataset_context(df, expanded_question)
 
-    # Pre-compute key data for mentioned universities and inject directly into prompt
-    # This bypasses unreliable CSV parsing by the model
+    # Pre-compute ALL data for mentioned universities and inject directly into prompt
+    # This bypasses unreliable CSV parsing - model sees all metrics as plain text
     rank_col_map = {"TIMES": "Times_Rank", "QS": "QS_Rank", "USN": "Rank", "Washington": "Washington_Rank"}
-    score_col_map = {"TIMES": "Overall", "QS": "Overall_Score", "USN": "Overall_scores", "Washington": None}
     rank_col = rank_col_map.get(_CURRENT_AGENCY)
-    score_col = score_col_map.get(_CURRENT_AGENCY)
     rank_summary_lines = []
     if rank_col and rank_col in df.columns:
         latest_year = df['Year'].max()
         latest_df = df[df['Year'] == latest_year]
         available_unis = latest_df['IPEDS_Name'].unique().tolist()
         mentioned = extract_universities_from_question(expanded_question, available_unis)
+        # Determine which columns to inject (same as what we send in the CSV)
+        agency_cols = {
+            "TIMES": ['Times_Rank','Overall','Teaching','Research_Quality','Research_Environment','Industry','International_Outlook','No_of_FTE_Students','No_of_students_per_staff','International_Students','Female_Ratio','Male_Ratio'],
+            "QS": ['QS_Rank','Overall_Score','Academic_Reputation','Employer_Reputation','Citations_per_Faculty','Faculty_Student_Ratio','Employment_Outcomes','International_Faculty_Ratio','International_Student_Ratio','International_Research_Network','Sustainability_Score'],
+            "USN": ['Rank','Overall_scores','Peer_assessment_score','Actual_graduation_rate','Average_first_year_retention_rate','6-year_Graduation_Rate','Over_/_Under-_Performance','Pell_Graduation_Rate','Median_debt_for_grads_with_federal_loans','College_grads_earning_more_than_a_HS_grad','Financial_resources_rank','Student-faculty_ratio','Percent_of_full-time_faculty','Bibliometric_Rank','Social_Mobility_Rank','Alumni_Giving','Acceptance_rate'],
+            "Washington": ['Washington_Rank','8-year_graduation_rate','Research_expenditures_(M)','Social_mobility_rank','Research_rank','Service_rank','Access_rank','Affordability_rank','Outcomes_rank','Pell/non-Pell_graduation_gap','Earnings_after_9_years','Median_Earnings_after_10_years'],
+        }
+        inject_cols = agency_cols.get(_CURRENT_AGENCY, [])
+
         for uni in mentioned:
             row = latest_df[latest_df['IPEDS_Name'] == uni]
             if not row.empty:
-                rank_val = str(row[rank_col].iloc[0]).replace('\u2013', '-')
-                line = f"  - {uni}: Rank {rank_val}"
-                if score_col and score_col in row.columns:
-                    score_val = row[score_col].iloc[0]
-                    if pd.notna(score_val):
-                        line += f", Score {score_val}"
-                rank_summary_lines.append(line)
+                metrics = []
+                for col in inject_cols:
+                    if col in row.columns:
+                        val = row[col].iloc[0]
+                        if pd.notna(val):
+                            val_str = str(val).replace('\u2013', '-')
+                            metrics.append(f"{col}={val_str}")
+                if metrics:
+                    rank_summary_lines.append(f"  {uni}: {', '.join(metrics)}")
     rank_summary = "\n".join(rank_summary_lines) if rank_summary_lines else ""
 
     # System prompt with ranking rules
