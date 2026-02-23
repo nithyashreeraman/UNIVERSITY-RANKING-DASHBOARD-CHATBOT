@@ -506,6 +506,22 @@ def get_ai_response(question: str, api_key: str, model_id: str) -> str:
                     rank_summary_lines.append(f"  {uni}: {', '.join(metrics)}")
     rank_summary = "\n".join(rank_summary_lines) if rank_summary_lines else ""
 
+    # Special handling: Pell gap/rate questions in Washington — pre-sort by |gap| in Python
+    # Model cannot sort by absolute value reliably, so we do it here
+    pell_q_keywords = ['pell rate', 'pell gap', 'pell equity', 'good pell', 'best pell', 'pell graduation']
+    if _CURRENT_AGENCY == "Washington" and any(kw in expanded_question.lower() for kw in pell_q_keywords):
+        pell_col = 'Pell/non-Pell_graduation_gap'
+        latest_year = df['Year'].max()
+        latest_df = df[df['Year'] == latest_year]
+        if pell_col in latest_df.columns:
+            pell_df = latest_df[['IPEDS_Name', pell_col]].dropna().copy()
+            pell_df['abs_gap'] = pell_df[pell_col].abs()
+            pell_df = pell_df.sort_values('abs_gap').head(10)
+            pell_lines = ["PELL EQUITY RANKING (pre-sorted by Python, smallest gap = best equity, #1 is best):"]
+            for i, (_, row) in enumerate(pell_df.iterrows(), 1):
+                pell_lines.append(f"  #{i} {row['IPEDS_Name']}: Pell gap = {row[pell_col]:.4f}")
+            rank_summary = "\n".join(pell_lines) + ("\n" + rank_summary if rank_summary else "")
+
     # System prompt with ranking rules
     system_prompt = """You are a university rankings data analyst. You help users understand university ranking data with EXTREME ACCURACY.
 
