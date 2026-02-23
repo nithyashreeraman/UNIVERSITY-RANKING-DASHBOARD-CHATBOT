@@ -720,8 +720,8 @@ REMINDER BEFORE ANSWERING:
 
 FORMAT RULES (strictly follow):
 - START with the answer immediately — NO preamble, NO methodology explanations
-- Each bullet = ONE line only — no multi-sentence bullets
-- Max 3 bullets total — pick only the most relevant data points
+- Keep each bullet concise — metric name + value, no lengthy explanation
+- Max 3-5 bullets total — pick only the most relevant data points
 - Use **bold** for university names and key values
 - Use `-` markdown bullet points (NOT • symbol)
 - ❌ NEVER show raw column names — use plain English (rank, score, Pell gap, etc.)
