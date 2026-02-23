@@ -719,41 +719,44 @@ REMINDER BEFORE ANSWERING:
 {f"7. ⚠️ PRE-SORTED PELL EQUITY LIST above — show it as-is (top 5 only). Conclusion: 1 sentence naming the top 1-2 universities with their gap values." if pell_ranking_injected else ""}
 
 FORMAT RULES (strictly follow):
-- START with the answer immediately — NO "To determine...", NO "We look at...", NO column explanations
-- NEVER explain your reasoning or methodology — just give the result with numbers
-- Use markdown: **bold** for university names and key values
+- START with the answer immediately — NO preamble, NO methodology explanations
+- Each bullet = ONE line only — no multi-sentence bullets
+- Max 3 bullets total — pick only the most relevant data points
+- Use **bold** for university names and key values
 - Use `-` markdown bullet points (NOT • symbol)
-- ❌ NEVER show raw column names (e.g. Times_Rank, Pell/non-Pell_graduation_gap, QS_Rank)
-  Use plain English instead: "rank", "score", "Pell gap", "graduation rate", "overall score"
-
-DATA TO SHOW:
-- General comparison ("How is X compared to Y"): show ONLY rank + 2-3 most relevant metrics, NOT all metrics
-- "In which metric is X better than Y": list ONLY the metrics where X wins, as bullets with values
-- ❌ NEVER dump all available metrics — pick the most meaningful ones
+- ❌ NEVER show raw column names — use plain English (rank, score, Pell gap, etc.)
+- ❌ NEVER add comparisons to other universities unless the question asks for it
+- ❌ NEVER add context, caveats, or extra explanation after the bullets
 
 CONCLUSION RULES:
-- Comparisons and lists → YES, add Conclusion (1 short sentence only)
-- Simple single-value factual questions → NO Conclusion
-- ❌ Conclusion must NEVER be a long list — just 1 sentence stating the key finding
-- Always place Conclusion with a blank line before it
+- Comparisons and lists → 1 short sentence conclusion only
+- Simple factual questions → NO conclusion
+- Always place conclusion with a blank line before it
 
 Examples:
 
 Simple factual (NO conclusion):
 **NJIT** is ranked **501-600** in TIMES 2021.
 
-Comparison (rank + 2-3 metrics only):
-- **NJIT**: Rank **761-770**, Academic reputation **7.5**, Employer reputation **19.8**
-- **Saint Louis University**: Rank **951-1000**, Academic reputation **5.7**, Employer reputation **4.2**
+"Which metrics contribute most" (top 3 only, no comparisons):
+- **Research Quality**: 65.2
+- **International Outlook**: 91.9
+- **Industry**: 68.5
 
-**Conclusion:** NJIT is ranked higher than Saint Louis University.
+**Conclusion:** Research Quality and International Outlook are NJIT's strongest metrics.
 
-"In which metric is X better" (winning metrics only):
-- Academic reputation: Rutgers **47.7** vs NJIT 7.5
-- Faculty student ratio: Rutgers **53.4** vs NJIT 13.2
-- Employment outcomes: Rutgers **44.6** vs NJIT 10.4
+"Areas to improve" (bottom 3 only, no comparisons):
+- **Teaching**: 27.5
+- **Research Environment**: 23.3
+- **Students per staff**: 14.9
 
-**Conclusion:** Rutgers outperforms NJIT in 9 metrics."""
+**Conclusion:** Teaching and Research Environment are NJIT's weakest areas.
+
+Comparison (rank + 2 metrics max):
+- **NJIT**: Rank **761-770**, Academic reputation **7.5**
+- **Saint Louis**: Rank **951-1000**, Academic reputation **5.7**
+
+**Conclusion:** NJIT is ranked higher than Saint Louis University."""
 
     try:
         client = InferenceClient(model=model_id, token=api_key)
