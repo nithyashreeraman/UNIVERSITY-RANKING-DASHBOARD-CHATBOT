@@ -508,6 +508,7 @@ def get_ai_response(question: str, api_key: str, model_id: str) -> str:
 
     # Special handling: Pell gap/rate questions in Washington — pre-sort by |gap| in Python
     # Model cannot sort by absolute value reliably, so we do it here
+    pell_ranking_injected = False
     pell_q_keywords = ['pell rate', 'pell gap', 'pell equity', 'good pell', 'best pell', 'pell graduation']
     if _CURRENT_AGENCY == "Washington" and any(kw in expanded_question.lower() for kw in pell_q_keywords):
         pell_col = 'Pell/non-Pell_graduation_gap'
@@ -517,10 +518,14 @@ def get_ai_response(question: str, api_key: str, model_id: str) -> str:
             pell_df = latest_df[['IPEDS_Name', pell_col]].dropna().copy()
             pell_df['abs_gap'] = pell_df[pell_col].abs()
             pell_df = pell_df.sort_values('abs_gap').head(10)
-            pell_lines = ["PELL EQUITY RANKING (pre-sorted by Python, smallest gap = best equity, #1 is best):"]
+            pell_lines = [
+                "⚠️ PELL EQUITY RANKING — ALREADY SORTED BY PYTHON. USE THIS ORDER EXACTLY. DO NOT REORDER.",
+                "Gap closest to 0 = best equity. #1 = best university for Pell equity."
+            ]
             for i, (_, row) in enumerate(pell_df.iterrows(), 1):
                 pell_lines.append(f"  #{i} {row['IPEDS_Name']}: Pell gap = {row[pell_col]:.4f}")
             rank_summary = "\n".join(pell_lines) + ("\n" + rank_summary if rank_summary else "")
+            pell_ranking_injected = True
 
     # System prompt with ranking rules
     system_prompt = """You are a university rankings data analyst. You help users understand university ranking data with EXTREME ACCURACY.
@@ -699,7 +704,7 @@ FORMAT BY QUESTION TYPE:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 QUESTION: {expanded_question}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-{f"UNIVERSITY RANKS FROM DATA:{chr(10)}{rank_summary}" if rank_summary else ""}
+{f"UNIVERSITY DATA FROM DATASET:{chr(10)}{rank_summary}" if rank_summary else ""}
 REMINDER BEFORE ANSWERING:
 1. Answer using the universities and ranks shown in the CSV data above
 2. LOWER rank number = BETTER ranking (Rank 50 beats Rank 200)
@@ -707,6 +712,7 @@ REMINDER BEFORE ANSWERING:
 4. For tied ranks (same rank like "501-600"), list universities as equal competitors
 5. For comparisons, check which university has LOWER rank number
 6. For multi-year questions, use ALL relevant years from data
+{f"7. ⚠️ A PRE-SORTED PELL EQUITY RANKING is provided above. Report universities in EXACTLY that order (#1 first). The university ranked #1 has the BEST Pell equity. DO NOT use CSV order or pick Berea College — follow the pre-sorted list." if pell_ranking_injected else ""}
 
 FORMAT RULES (strictly follow):
 - START with the answer immediately — NO "To determine...", NO "We look at...", NO column explanations
