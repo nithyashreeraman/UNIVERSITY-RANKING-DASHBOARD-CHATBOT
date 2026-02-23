@@ -708,7 +708,7 @@ FORMAT BY QUESTION TYPE:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 QUESTION: {expanded_question}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-{f"UNIVERSITY DATA FROM DATASET:{chr(10)}{rank_summary}" if rank_summary else ""}
+{f"UNIVERSITY RANKS FROM DATA:{chr(10)}{rank_summary}" if rank_summary else ""}
 REMINDER BEFORE ANSWERING:
 1. Answer using the universities and ranks shown in the CSV data above
 2. LOWER rank number = BETTER ranking (Rank 50 beats Rank 200)
@@ -719,53 +719,19 @@ REMINDER BEFORE ANSWERING:
 {f"7. ⚠️ PRE-SORTED PELL EQUITY LIST above — show it as-is (top 5 only). Conclusion: 1 sentence naming the top 1-2 universities with their gap values." if pell_ranking_injected else ""}
 
 FORMAT RULES (strictly follow):
-- START with the answer immediately — NO preamble, NO methodology explanations
-- Answer ONLY what was asked — if rank was asked, show ONLY rank; if score was asked, show ONLY score
-- Keep each bullet concise — metric name + value, no lengthy explanation
-- Max 3-5 bullets total — pick only the most relevant data points
-- Use **bold** for university names and key values
-- Use `-` markdown bullet points (NOT • symbol)
-- ❌ NEVER show raw column names — use plain English (rank, score, Pell gap, etc.)
-- ❌ NEVER add comparisons to other universities unless the question asks for it
-- ❌ NEVER add context, caveats, or extra explanation after the bullets
-- ❌ NEVER add lines like "Overall Score is not available" or "X is not available" — omit missing data silently
+- START with the answer immediately — NO "To determine...", NO "We look at...", NO column explanations
+- NEVER explain your reasoning or methodology — just give the result with numbers
+- Use markdown formatting: **bold** for university names and key values
+- Use `-` markdown bullet points (NOT • symbol) so they render with proper spacing
+- Single factual → 1-2 sentences, plain prose, NO conclusion
+- List/ranking questions → `-` bullet per item with value bolded, then **Conclusion:** line
+- Comparison → `-` bullet per university with key metrics bolded, then **Conclusion:** line
 
-CONCLUSION RULES:
-- Comparisons and lists → 1 short sentence conclusion only
-- Simple factual questions → NO conclusion at all — not even "Conclusion:" header
-- Always place conclusion with a blank line before it
+Example output style for a list question:
+- **Berea College**: Pell gap **-0.24** — best equity
+- **Cal State LA**: Pell gap **-0.02** — good equity
 
-Examples:
-
-Simple factual — rank/single metric (show ONLY what was asked, NO other metrics, NO conclusion):
-Q: "What is NJIT rank in 2021?"
-✅ **New Jersey Institute of Technology** is ranked **751-800** in QS 2021.
-❌ WRONG: adding "Overall Score is not available" or "Academic Reputation is not available" — these were NOT asked.
-❌ WRONG: adding "Conclusion:" at the end — this is a simple factual, no conclusion needed.
-
-Simple factual — score/single value (NO conclusion):
-Q: "What is NJIT overall score?"
-✅ **New Jersey Institute of Technology** overall score is **34.2** in TIMES 2024.
-
-"Which metrics contribute most" (top 3 only, no comparisons):
-- **Research Quality**: 65.2
-- **International Outlook**: 91.9
-- **Industry**: 68.5
-
-**Conclusion:** Research Quality and International Outlook are NJIT's strongest metrics.
-
-"Areas to improve" (bottom 3 only, no comparisons):
-- **Teaching**: 27.5
-- **Research Environment**: 23.3
-- **Students per staff**: 14.9
-
-**Conclusion:** Teaching and Research Environment are NJIT's weakest areas.
-
-Comparison (rank + 2 metrics max):
-- **NJIT**: Rank **761-770**, Academic reputation **7.5**
-- **Saint Louis**: Rank **951-1000**, Academic reputation **5.7**
-
-**Conclusion:** NJIT is ranked higher than Saint Louis University."""
+**Conclusion:** Berea College has the smallest Pell gap."""
 
     try:
         client = InferenceClient(model=model_id, token=api_key)
