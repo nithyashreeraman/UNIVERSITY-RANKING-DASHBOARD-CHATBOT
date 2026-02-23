@@ -579,8 +579,11 @@ def get_ai_response(question: str, api_key: str, model_id: str) -> str:
    • "Number of Pell recipients" / "Pell count" → Number_of_Pell_recipients (COUNT)
 
    If user asks "which university has good pell rate" in the Washington tab:
-   → Use Pell/non-Pell_graduation_gap — universities with gap closest to 0 (or least negative) have best Pell equity
-   → Also mention Pell_graduation_gap_rank if available
+   → Use Pell/non-Pell_graduation_gap
+   → RANK BY: sort by absolute value of gap (|gap|) — the university with the SMALLEST absolute value is BEST
+   → Example: gap of -0.02 is BETTER than gap of -0.24 because |-0.02| < |-0.24|
+   → ❌ NEVER say a large negative gap (like -0.24) is "nearly equal" — -0.24 means a 24% gap which is BAD
+   → ✅ A gap near 0 (like -0.02 or +0.01) means nearly equal outcomes — that is GOOD equity
 
    ❌ Never use Number_of_Pell_recipients to answer "pell rate" questions (it's a COUNT not a rate)
    ❌ Never use 8-year_graduation_rate or other non-Pell columns as a proxy for Pell metrics
