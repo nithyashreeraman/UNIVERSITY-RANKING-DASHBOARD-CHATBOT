@@ -890,15 +890,17 @@ def render_hf_chatbot_ui(times_df, qs_df, usn_df, washington_df, sidebar_selecte
                 content = re.sub(r'\s*•\s*', '\n- ', content).strip()
                 # Ensure markdown - bullets each start on their own line
                 content = re.sub(r'\s*\n- ', '\n\n- ', content).strip()
-                # Strip "not available" lines for metrics that weren't asked
-                content = re.sub(r'.+is not available\.?\s*\n?', '', content).strip()
-                # Remove empty Conclusion lines line-by-line (catches all variants)
+                # Line-by-line cleanup: remove "not available" lines and bare Conclusion headers
                 lines = content.split('\n')
                 cleaned_lines = []
                 for line in lines:
                     stripped = line.strip()
+                    # Skip lines mentioning "not available" (unrequested metrics)
+                    if 'not available' in stripped.lower():
+                        continue
+                    # Skip bare "Conclusion:" headers with nothing after them
                     if re.match(r'^\*{0,2}Conclusion:\*{0,2}:?\s*$', stripped, re.IGNORECASE):
-                        continue  # skip bare "Conclusion:" headers with no text
+                        continue
                     cleaned_lines.append(line)
                 content = '\n'.join(cleaned_lines).strip()
                 # Ensure blank line before non-empty Conclusion:
