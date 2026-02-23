@@ -697,28 +697,34 @@ FORMAT RULES (strictly follow):
 - ❌ NEVER show raw column names (e.g. Times_Rank, Pell/non-Pell_graduation_gap, QS_Rank)
   Use plain English instead: "rank", "score", "Pell gap", "graduation rate", "overall score"
 
-WHEN TO ADD A CONCLUSION:
-- Comparisons between universities → YES, add Conclusion
-- List/top-N/competitor questions → YES, add Conclusion
-- Simple single-value factual questions (rank, score for one university) → NO Conclusion needed
-- Always place Conclusion on its own line with a blank line before it
+DATA TO SHOW:
+- General comparison ("How is X compared to Y"): show ONLY rank + 2-3 most relevant metrics, NOT all metrics
+- "In which metric is X better than Y": list ONLY the metrics where X wins, as bullets with values
+- ❌ NEVER dump all available metrics — pick the most meaningful ones
+
+CONCLUSION RULES:
+- Comparisons and lists → YES, add Conclusion (1 short sentence only)
+- Simple single-value factual questions → NO Conclusion
+- ❌ Conclusion must NEVER be a long list — just 1 sentence stating the key finding
+- Always place Conclusion with a blank line before it
 
 Examples:
 
 Simple factual (NO conclusion):
 **NJIT** is ranked **501-600** in TIMES 2021.
 
-Comparison (with conclusion):
-- **NJIT**: Rank **501-600**, Overall score **38.5**
-- **Stevens**: Rank **401-500**, Overall score **42.1**
+Comparison (rank + 2-3 metrics only):
+- **NJIT**: Rank **761-770**, Academic reputation **7.5**, Employer reputation **19.8**
+- **Saint Louis University**: Rank **951-1000**, Academic reputation **5.7**, Employer reputation **4.2**
 
-**Conclusion:** Stevens is ranked higher than NJIT in 2026.
+**Conclusion:** NJIT is ranked higher than Saint Louis University.
 
-List question (with conclusion):
-- **Berea College**: Pell gap **-0.24**
-- **Cal State LA**: Pell gap **-0.02**
+"In which metric is X better" (winning metrics only):
+- Academic reputation: Rutgers **47.7** vs NJIT 7.5
+- Faculty student ratio: Rutgers **53.4** vs NJIT 13.2
+- Employment outcomes: Rutgers **44.6** vs NJIT 10.4
 
-**Conclusion:** Berea College has the best Pell equity."""
+**Conclusion:** Rutgers outperforms NJIT in 9 metrics."""
 
     try:
         client = InferenceClient(model=model_id, token=api_key)
