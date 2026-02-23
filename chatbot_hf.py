@@ -720,6 +720,7 @@ REMINDER BEFORE ANSWERING:
 
 FORMAT RULES (strictly follow):
 - START with the answer immediately — NO preamble, NO methodology explanations
+- Answer ONLY what was asked — if rank was asked, show ONLY rank; if score was asked, show ONLY score
 - Keep each bullet concise — metric name + value, no lengthy explanation
 - Max 3-5 bullets total — pick only the most relevant data points
 - Use **bold** for university names and key values
@@ -727,18 +728,20 @@ FORMAT RULES (strictly follow):
 - ❌ NEVER show raw column names — use plain English (rank, score, Pell gap, etc.)
 - ❌ NEVER add comparisons to other universities unless the question asks for it
 - ❌ NEVER add context, caveats, or extra explanation after the bullets
+- ❌ NEVER add lines like "Overall Score is not available" or "X is not available" — omit missing data silently
 
 CONCLUSION RULES:
 - Comparisons and lists → 1 short sentence conclusion only
-- Simple factual questions → NO conclusion
+- Simple factual questions → NO conclusion at all — not even "Conclusion:" header
 - Always place conclusion with a blank line before it
 
 Examples:
 
 Simple factual — rank/single metric (show ONLY what was asked, NO other metrics, NO conclusion):
-Q: "What is NJIT rank in 2023?"
-✅ **New Jersey Institute of Technology** is ranked **651-700** in QS 2023.
-❌ DO NOT add Academic Reputation, Employer Reputation, or any other metrics — only the rank was asked.
+Q: "What is NJIT rank in 2021?"
+✅ **New Jersey Institute of Technology** is ranked **751-800** in QS 2021.
+❌ WRONG: adding "Overall Score is not available" or "Academic Reputation is not available" — these were NOT asked.
+❌ WRONG: adding "Conclusion:" at the end — this is a simple factual, no conclusion needed.
 
 Simple factual — score/single value (NO conclusion):
 Q: "What is NJIT overall score?"
@@ -887,8 +890,17 @@ def render_hf_chatbot_ui(times_df, qs_df, usn_df, washington_df, sidebar_selecte
                 content = re.sub(r'\s*•\s*', '\n- ', content).strip()
                 # Ensure markdown - bullets each start on their own line
                 content = re.sub(r'\s*\n- ', '\n\n- ', content).strip()
-                # Remove empty Conclusion lines (e.g. "Conclusion:" with nothing after)
-                content = re.sub(r'\*{0,2}Conclusion:\*{0,2}\s*$', '', content, flags=re.MULTILINE).strip()
+                # Strip "not available" lines for metrics that weren't asked
+                content = re.sub(r'.+is not available\.?\s*\n?', '', content).strip()
+                # Remove empty Conclusion lines line-by-line (catches all variants)
+                lines = content.split('\n')
+                cleaned_lines = []
+                for line in lines:
+                    stripped = line.strip()
+                    if re.match(r'^\*{0,2}Conclusion:\*{0,2}:?\s*$', stripped, re.IGNORECASE):
+                        continue  # skip bare "Conclusion:" headers with no text
+                    cleaned_lines.append(line)
+                content = '\n'.join(cleaned_lines).strip()
                 # Ensure blank line before non-empty Conclusion:
                 content = re.sub(r'\s*\n?\s*(\*{0,2}Conclusion:.+)', r'\n\n\1', content).strip()
                 st.sidebar.markdown(f"**AI:**\n\n{content}")
