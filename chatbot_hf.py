@@ -532,7 +532,19 @@ def get_ai_response(question: str, api_key: str, model_id: str) -> str:
             pell_ranking_injected = True
 
     # System prompt with ranking rules
-    system_prompt = """You are a university rankings data analyst. You help users understand university ranking data with EXTREME ACCURACY.
+    is_llama = "llama" in model_id.lower()
+
+    if is_llama:
+        system_prompt = """You are a university rankings data analyst. Answer questions using ONLY the data provided.
+
+STRICT RULES:
+- Answer ONLY what was asked. If rank was asked, give ONLY the rank.
+- NEVER list fields that are missing or not available — skip them silently.
+- NEVER add a Conclusion for simple factual questions (rank, score, single value).
+- LOWER rank number = BETTER ranking.
+- No preamble, no methodology, no column names."""
+    else:
+        system_prompt = """You are a university rankings data analyst. You help users understand university ranking data with EXTREME ACCURACY.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🚨 CRITICAL RULES - READ CAREFULLY BEFORE EVERY RESPONSE 🚨
@@ -702,7 +714,7 @@ FORMAT BY QUESTION TYPE:
 ❌ Do NOT explain which column you are using or why — just use it and show the result
 ❌ Do NOT start with "To determine..." or "We look at..." — go straight to the answer"""
 
-    # User message with context and question
+    # User message with context and question (shared for both models)
     user_message = f"""{dataset_context}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
