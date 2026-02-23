@@ -515,7 +515,11 @@ def get_ai_response(question: str, api_key: str, model_id: str) -> str:
         latest_year = df['Year'].max()
         latest_df = df[df['Year'] == latest_year]
         if pell_col in latest_df.columns:
-            pell_df = latest_df[['IPEDS_Name', pell_col]].dropna().copy()
+            pell_df = latest_df[['IPEDS_Name', pell_col, 'Number_of_Pell_recipients']].copy()
+            pell_df = pell_df.dropna(subset=[pell_col])
+            # Filter to universities with at least 1000 Pell recipients to exclude small/non-traditional campuses
+            if 'Number_of_Pell_recipients' in pell_df.columns:
+                pell_df = pell_df[pell_df['Number_of_Pell_recipients'] >= 1000]
             pell_df['abs_gap'] = pell_df[pell_col].abs()
             pell_df = pell_df.sort_values('abs_gap').head(10)
             pell_lines = [
