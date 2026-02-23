@@ -692,17 +692,29 @@ REMINDER BEFORE ANSWERING:
 FORMAT RULES (strictly follow):
 - START with the answer immediately — NO "To determine...", NO "We look at...", NO column explanations
 - NEVER explain your reasoning or methodology — just give the result with numbers
-- Use markdown formatting: **bold** for university names and key values
-- Use `-` markdown bullet points (NOT • symbol) so they render with proper spacing
-- Single factual → 1-2 sentences, plain prose
-- List/ranking questions → `-` bullet per item with value bolded, then **Conclusion:** line
-- Comparison → `-` bullet per university with key metrics bolded, then **Conclusion:** line
+- Use markdown: **bold** for university names and key values
+- Use `-` markdown bullet points (NOT • symbol)
+- Always end with a **Conclusion:** line summarizing the answer
 
-Example output style for a list question:
-- **Berea College**: Pell gap **-0.24** — best equity
-- **Cal State LA**: Pell gap **-0.02** — good equity
+STANDARD STRUCTURE FOR ALL RESPONSES:
+1. Key data as `-` bullet points (1 line per university or data point)
+2. **Conclusion:** one sentence summary
 
-**Conclusion:** Berea College has the smallest Pell gap."""
+Examples:
+
+Factual question:
+- **NJIT**: QS Rank **801-850**, Overall Score **30.2**
+**Conclusion:** NJIT is ranked 801-850 in QS 2026.
+
+Comparison question:
+- **NJIT**: Rank **501-600**, Overall **38.5**
+- **Stevens**: Rank **401-500**, Overall **42.1**
+**Conclusion:** Stevens is ranked higher than NJIT in 2026.
+
+List question:
+- **Berea College**: Pell gap **-0.24**
+- **Cal State LA**: Pell gap **-0.02**
+**Conclusion:** Berea College has the best Pell equity."""
 
     try:
         client = InferenceClient(model=model_id, token=api_key)
