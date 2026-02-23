@@ -521,7 +521,7 @@ def get_ai_response(question: str, api_key: str, model_id: str) -> str:
             if 'Number_of_Pell_recipients' in pell_df.columns:
                 pell_df = pell_df[pell_df['Number_of_Pell_recipients'] >= 1000]
             pell_df['abs_gap'] = pell_df[pell_col].abs()
-            pell_df = pell_df.sort_values('abs_gap').head(10)
+            pell_df = pell_df.sort_values('abs_gap').head(5)
             pell_lines = [
                 "⚠️ PELL EQUITY RANKING — ALREADY SORTED BY PYTHON. USE THIS ORDER EXACTLY. DO NOT REORDER.",
                 "Gap closest to 0 = best equity. #1 = best university for Pell equity."
@@ -716,7 +716,7 @@ REMINDER BEFORE ANSWERING:
 4. For tied ranks (same rank like "501-600"), list universities as equal competitors
 5. For comparisons, check which university has LOWER rank number
 6. For multi-year questions, use ALL relevant years from data
-{f"7. ⚠️ A PRE-SORTED PELL EQUITY RANKING is provided above. Report universities in EXACTLY that order (#1 first). ALL universities in this list have good Pell equity (gap close to 0). The Conclusion should say ALL of them have good equity, not just #1 — e.g. 'All universities listed above have good Pell equity (gap ≤ 0.01). Strayer has the smallest gap (0.0000) but Emory, Florida State and others also perform well.'" if pell_ranking_injected else ""}
+{f"7. ⚠️ PRE-SORTED PELL EQUITY LIST above — show it as-is (top 5 only). Conclusion: 1 sentence naming the top 1-2 universities with their gap values." if pell_ranking_injected else ""}
 
 FORMAT RULES (strictly follow):
 - START with the answer immediately — NO "To determine...", NO "We look at...", NO column explanations
