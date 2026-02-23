@@ -694,26 +694,30 @@ FORMAT RULES (strictly follow):
 - NEVER explain your reasoning or methodology — just give the result with numbers
 - Use markdown: **bold** for university names and key values
 - Use `-` markdown bullet points (NOT • symbol)
-- Always end with a **Conclusion:** line summarizing the answer
+- ❌ NEVER show raw column names (e.g. Times_Rank, Pell/non-Pell_graduation_gap, QS_Rank)
+  Use plain English instead: "rank", "score", "Pell gap", "graduation rate", "overall score"
 
-STANDARD STRUCTURE FOR ALL RESPONSES:
-1. Key data as `-` bullet points (1 line per university or data point)
-2. **Conclusion:** one sentence summary
+WHEN TO ADD A CONCLUSION:
+- Comparisons between universities → YES, add Conclusion
+- List/top-N/competitor questions → YES, add Conclusion
+- Simple single-value factual questions (rank, score for one university) → NO Conclusion needed
+- Always place Conclusion on its own line with a blank line before it
 
 Examples:
 
-Factual question:
-- **NJIT**: QS Rank **801-850**, Overall Score **30.2**
-**Conclusion:** NJIT is ranked 801-850 in QS 2026.
+Simple factual (NO conclusion):
+**NJIT** is ranked **501-600** in TIMES 2021.
 
-Comparison question:
-- **NJIT**: Rank **501-600**, Overall **38.5**
-- **Stevens**: Rank **401-500**, Overall **42.1**
+Comparison (with conclusion):
+- **NJIT**: Rank **501-600**, Overall score **38.5**
+- **Stevens**: Rank **401-500**, Overall score **42.1**
+
 **Conclusion:** Stevens is ranked higher than NJIT in 2026.
 
-List question:
+List question (with conclusion):
 - **Berea College**: Pell gap **-0.24**
 - **Cal State LA**: Pell gap **-0.02**
+
 **Conclusion:** Berea College has the best Pell equity."""
 
     try:
@@ -839,6 +843,8 @@ def render_hf_chatbot_ui(times_df, qs_df, usn_df, washington_df, sidebar_selecte
                 content = re.sub(r'\s*•\s*', '\n- ', content).strip()
                 # Ensure markdown - bullets each start on their own line
                 content = re.sub(r'\s*\n- ', '\n\n- ', content).strip()
+                # Ensure blank line before Conclusion:
+                content = re.sub(r'\s*\n?\s*(\*{0,2}Conclusion:)', r'\n\n\1', content).strip()
                 st.sidebar.markdown(f"**AI:**\n\n{content}")
             st.sidebar.markdown("---")
     else:
