@@ -735,8 +735,14 @@ CONCLUSION RULES:
 
 Examples:
 
-Simple factual (NO conclusion):
-**NJIT** is ranked **501-600** in TIMES 2021.
+Simple factual — rank/single metric (show ONLY what was asked, NO other metrics, NO conclusion):
+Q: "What is NJIT rank in 2023?"
+✅ **New Jersey Institute of Technology** is ranked **651-700** in QS 2023.
+❌ DO NOT add Academic Reputation, Employer Reputation, or any other metrics — only the rank was asked.
+
+Simple factual — score/single value (NO conclusion):
+Q: "What is NJIT overall score?"
+✅ **New Jersey Institute of Technology** overall score is **34.2** in TIMES 2024.
 
 "Which metrics contribute most" (top 3 only, no comparisons):
 - **Research Quality**: 65.2
@@ -881,8 +887,10 @@ def render_hf_chatbot_ui(times_df, qs_df, usn_df, washington_df, sidebar_selecte
                 content = re.sub(r'\s*•\s*', '\n- ', content).strip()
                 # Ensure markdown - bullets each start on their own line
                 content = re.sub(r'\s*\n- ', '\n\n- ', content).strip()
-                # Ensure blank line before Conclusion:
-                content = re.sub(r'\s*\n?\s*(\*{0,2}Conclusion:)', r'\n\n\1', content).strip()
+                # Remove empty Conclusion lines (e.g. "Conclusion:" with nothing after)
+                content = re.sub(r'\*{0,2}Conclusion:\*{0,2}\s*$', '', content, flags=re.MULTILINE).strip()
+                # Ensure blank line before non-empty Conclusion:
+                content = re.sub(r'\s*\n?\s*(\*{0,2}Conclusion:.+)', r'\n\n\1', content).strip()
                 st.sidebar.markdown(f"**AI:**\n\n{content}")
             st.sidebar.markdown("---")
     else:
