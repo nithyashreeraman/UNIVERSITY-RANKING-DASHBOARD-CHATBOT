@@ -716,7 +716,7 @@ REMINDER BEFORE ANSWERING:
 4. For tied ranks (same rank like "501-600"), list universities as equal competitors
 5. For comparisons, check which university has LOWER rank number
 6. For multi-year questions, use ALL relevant years from data
-{f"7. ⚠️ A PRE-SORTED PELL EQUITY RANKING is provided above. Report universities in EXACTLY that order (#1 first). The university ranked #1 has the BEST Pell equity. DO NOT use CSV order or pick Berea College — follow the pre-sorted list." if pell_ranking_injected else ""}
+{f"7. ⚠️ A PRE-SORTED PELL EQUITY RANKING is provided above. Report universities in EXACTLY that order (#1 first). ALL universities in this list have good Pell equity (gap close to 0). The Conclusion should say ALL of them have good equity, not just #1 — e.g. 'All universities listed above have good Pell equity (gap ≤ 0.01). Strayer has the smallest gap (0.0000) but Emory, Florida State and others also perform well.'" if pell_ranking_injected else ""}
 
 FORMAT RULES (strictly follow):
 - START with the answer immediately — NO "To determine...", NO "We look at...", NO column explanations
