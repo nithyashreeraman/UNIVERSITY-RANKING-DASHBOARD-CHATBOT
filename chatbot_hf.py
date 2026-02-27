@@ -207,61 +207,38 @@ def prepare_dataset_context(df: pd.DataFrame, question: str = "") -> str:
                     subject_rank_raw = subject_data[rank_col].iloc[0]
                     subject_rank_display = str(subject_rank_raw)  # for the filter note
 
-                    # Parse rank (handle string ranges like "501-600" or numeric values)
+                    # Parse all ranks to numeric midpoints, then keep 15 nearest to subject
+                    def parse_rank_to_mid(rank_val):
+                        if pd.isna(rank_val):
+                            return float('inf')
+                        s = str(rank_val).replace("–", "-")
+                        if '-' in s:
+                            try:
+                                p = s.split("-")
+                                return (int(p[0]) + int(p[1])) // 2
+                            except:
+                                return float('inf')
+                        try:
+                            return float(rank_val)
+                        except:
+                            return float('inf')
+
                     try:
                         if pd.isna(subject_rank_raw):
                             pass
-                        elif isinstance(subject_rank_raw, str) and ('-' in str(subject_rank_raw) or '–' in str(subject_rank_raw)):
-                            parts = str(subject_rank_raw).replace("–", "-").split("-")
-                            subject_rank_mid = (int(parts[0]) + int(parts[1])) // 2
-
-                            def parse_rank_to_mid(rank_val):
-                                if pd.isna(rank_val):
-                                    return float('inf')
-                                if isinstance(rank_val, str) and ('-' in str(rank_val) or '–' in str(rank_val)):
-                                    try:
-                                        p = str(rank_val).replace("–", "-").split("-")
-                                        return (int(p[0]) + int(p[1])) // 2
-                                    except:
-                                        return float('inf')
-                                try:
-                                    return float(rank_val)
-                                except:
-                                    return float('inf')
-
-                            year_df['_temp_numeric_rank'] = year_df[rank_col].apply(parse_rank_to_mid)
-                            year_df = year_df[
-                                (year_df['_temp_numeric_rank'] >= subject_rank_mid - 50) &
-                                (year_df['_temp_numeric_rank'] <= subject_rank_mid + 50)
-                            ].copy()
-                            year_df = year_df.drop(columns=['_temp_numeric_rank'])
-
-                            # Ensure subject university is in the results
-                            if subject_uni not in year_df['IPEDS_Name'].values:
-                                subject_row = df[(df['IPEDS_Name'] == subject_uni) & (df['Year'].isin(target_years))]
-                                if not subject_row.empty:
-                                    year_df = pd.concat([year_df, subject_row], ignore_index=True)
                         else:
-                            subject_rank = float(subject_rank_raw)
-                            year_df['_temp_rank'] = pd.to_numeric(year_df[rank_col], errors='coerce')
-                            year_df = year_df[
-                                (year_df['_temp_rank'] >= subject_rank - 25) &
-                                (year_df['_temp_rank'] <= subject_rank + 25)
-                            ].copy()
-                            year_df = year_df.drop(columns=['_temp_rank'])
-
-                            if subject_uni not in year_df['IPEDS_Name'].values:
-                                subject_row = df[(df['IPEDS_Name'] == subject_uni) & (df['Year'].isin(target_years))]
-                                if not subject_row.empty:
-                                    year_df = pd.concat([year_df, subject_row], ignore_index=True)
+                            subject_rank_mid = parse_rank_to_mid(subject_rank_raw)
+                            year_df['_temp_numeric_rank'] = year_df[rank_col].apply(parse_rank_to_mid)
+                            year_df['_rank_diff'] = (year_df['_temp_numeric_rank'] - subject_rank_mid).abs()
+                            # Exclude the subject university from the sorted list, then take 15 nearest
+                            others_df = year_df[year_df['IPEDS_Name'] != subject_uni].copy()
+                            nearest = others_df.nsmallest(15, '_rank_diff')
+                            # Add subject university back
+                            subject_row_df = year_df[year_df['IPEDS_Name'] == subject_uni]
+                            year_df = pd.concat([subject_row_df, nearest], ignore_index=True)
+                            year_df = year_df.drop(columns=['_temp_numeric_rank', '_rank_diff'])
                     except (ValueError, TypeError, IndexError):
-                        try:
-                            year_df = year_df.nsmallest(50, rank_col)
-                        except (TypeError, ValueError, KeyError):
-                            try:
-                                year_df = year_df.sort_values(rank_col).head(50)
-                            except (TypeError, ValueError, KeyError):
-                                year_df = year_df.head(50)
+                        year_df = year_df.head(50)
     # 2. Geographic filtering
     elif needs_nj_filter and 'New_Jersey_University' in year_df.columns:
         year_df = year_df[year_df['New_Jersey_University'] == 'Yes'].copy()
