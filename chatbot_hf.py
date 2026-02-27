@@ -380,7 +380,7 @@ def prepare_dataset_context(df: pd.DataFrame, question: str = "") -> str:
     # Add filtering note for competitor questions
     filter_note = ""
     if needs_competitors and njit_present:
-        filter_note = "\nNOTE: Data pre-filtered to universities with similar ranks. List all universities in the CSV as competitors."
+        filter_note = "\nNOTE: Data pre-filtered to universities with similar ranks. List all universities EXCEPT New Jersey Institute of Technology as competitors — NJIT is the subject, not a competitor of itself."
 
     context = f"""
 DATASET: {_CURRENT_AGENCY} University Rankings
@@ -544,6 +544,15 @@ CORRECT: New Jersey Institute of Technology is ranked 501-600 in TIMES 2021.
 WRONG: Adding Overall score, Teaching score, Research score, or any other metric — those were NOT asked.
 WRONG: Adding "Conclusion:" at the end — not needed for a simple question.
 
+EXAMPLE — "Who are NJIT's top 4 competitors?"
+CORRECT (NJIT is NOT listed — it is the subject, not a competitor):
+- **Stevens Institute of Technology**: Rank 501-600
+- **Rensselaer Polytechnic Institute**: Rank 501-600
+- **University of Denver**: Rank 501-600
+- **Drexel University**: Rank 501-600
+
+**Conclusion:** These four universities are NJIT's closest competitors.
+
 EXAMPLE — "Compare NJIT and Stevens"
 CORRECT:
 - **NJIT**: Rank 601-800
@@ -551,13 +560,7 @@ CORRECT:
 
 **Conclusion:** Stevens is ranked higher than NJIT.
 
-EXAMPLE — "Which university has the best Pell equity?"
-CORRECT:
-- **University A**: Pell gap 0.002
-- **University B**: Pell gap 0.005
-
-**Conclusion:** University A has the best Pell equity.
-
+RULE: NEVER show raw column names like Times_Rank, QS_Rank, IPEDS_Name — write "rank" in plain English.
 LOWER rank number = BETTER ranking. HIGHER score = BETTER performance."""
     else:
         system_prompt = """You are a university rankings data analyst. You help users understand university ranking data with EXTREME ACCURACY.
@@ -749,11 +752,13 @@ REMINDER BEFORE ANSWERING:
 FORMAT RULES (strictly follow):
 - START with the answer immediately — NO "To determine...", NO "We look at...", NO column explanations
 - NEVER explain your reasoning or methodology — just give the result with numbers
+- NEVER show raw column names (Times_Rank, QS_Rank, Washington_Rank, IPEDS_Name, etc.) — write "rank" in plain English
 - Use markdown formatting: **bold** for university names and key values
 - Use `-` markdown bullet points (NOT • symbol) so they render with proper spacing
 - Single factual → 1-2 sentences, plain prose, NO conclusion
 - List/ranking questions → `-` bullet per item with value bolded, then **Conclusion:** line
 - Comparison → `-` bullet per university with key metrics bolded, then **Conclusion:** line
+- For competitor questions: EXCLUDE the university being asked about from the list
 
 Example output style for a list question:
 - **Berea College**: Pell gap **-0.24** — best equity
