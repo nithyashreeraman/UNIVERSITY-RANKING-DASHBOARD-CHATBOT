@@ -180,17 +180,17 @@ def prepare_dataset_context(df: pd.DataFrame, question: str = "") -> str:
 
     # Smart filtering logic (priority order matters):
     # 1. Competitor questions - HIGHEST PRIORITY
+    subject_uni = None
+    subject_rank_display = ""
     if needs_competitors:
-        # Competitor question: find universities with similar rank (±25 rank positions)
-        # e.g., "Who are NJIT's competitors?"
+        # Determine subject university: use first mentioned uni, fall back to NJIT
         njit_name = "New Jersey Institute of Technology"
+        subject_uni = mentioned_unis[0] if mentioned_unis else njit_name
 
-        # Debug: Check if NJIT is in the year-filtered dataset
-        if njit_name not in available_unis:
-            # NJIT not in this agency's dataset for this year - send all available data
+        if subject_uni not in available_unis:
             pass  # Fall through to else clause to send top 50
         else:
-            # Find NJIT's rank and filter to nearby universities
+            # Find subject university's rank and filter to nearby universities
             rank_col = None
             if _CURRENT_AGENCY == "TIMES" and 'Times_Rank' in year_df.columns:
                 rank_col = 'Times_Rank'
@@ -202,22 +202,19 @@ def prepare_dataset_context(df: pd.DataFrame, question: str = "") -> str:
                 rank_col = 'Washington_Rank'
 
             if rank_col:
-                njit_data = year_df[year_df['IPEDS_Name'] == njit_name]
-                if not njit_data.empty:
-                    njit_rank_raw = njit_data[rank_col].iloc[0]
+                subject_data = year_df[year_df['IPEDS_Name'] == subject_uni]
+                if not subject_data.empty:
+                    subject_rank_raw = subject_data[rank_col].iloc[0]
+                    subject_rank_display = str(subject_rank_raw)  # for the filter note
 
                     # Parse rank (handle string ranges like "501-600" or numeric values)
                     try:
-                        if pd.isna(njit_rank_raw):
-                            # No rank available, skip filtering
+                        if pd.isna(subject_rank_raw):
                             pass
-                        elif isinstance(njit_rank_raw, str) and ('-' in str(njit_rank_raw) or '–' in str(njit_rank_raw)):
-                            # Parse range like "501-600" or "501–600" to get midpoint (handles both hyphen and en-dash)
-                            parts = str(njit_rank_raw).replace("–", "-").split("-")
-                            njit_rank_mid = (int(parts[0]) + int(parts[1])) // 2
+                        elif isinstance(subject_rank_raw, str) and ('-' in str(subject_rank_raw) or '–' in str(subject_rank_raw)):
+                            parts = str(subject_rank_raw).replace("–", "-").split("-")
+                            subject_rank_mid = (int(parts[0]) + int(parts[1])) // 2
 
-                            # For string ranges, we need to parse all ranks to filter properly
-                            # Create a temporary numeric column for filtering
                             def parse_rank_to_mid(rank_val):
                                 if pd.isna(rank_val):
                                     return float('inf')
@@ -233,50 +230,37 @@ def prepare_dataset_context(df: pd.DataFrame, question: str = "") -> str:
                                     return float('inf')
 
                             year_df['_temp_numeric_rank'] = year_df[rank_col].apply(parse_rank_to_mid)
-                            # Filter to universities within ±50 ranks of NJIT (wider range for string ranks)
                             year_df = year_df[
-                                (year_df['_temp_numeric_rank'] >= njit_rank_mid - 50) &
-                                (year_df['_temp_numeric_rank'] <= njit_rank_mid + 50)
+                                (year_df['_temp_numeric_rank'] >= subject_rank_mid - 50) &
+                                (year_df['_temp_numeric_rank'] <= subject_rank_mid + 50)
                             ].copy()
                             year_df = year_df.drop(columns=['_temp_numeric_rank'])
 
-                            # Ensure NJIT itself is in the results
-                            if njit_name not in year_df['IPEDS_Name'].values:
-                                # Add NJIT back if it was filtered out
-                                njit_row = df[(df['IPEDS_Name'] == njit_name) & (df['Year'].isin(target_years))]
-                                if not njit_row.empty:
-                                    year_df = pd.concat([year_df, njit_row], ignore_index=True)
+                            # Ensure subject university is in the results
+                            if subject_uni not in year_df['IPEDS_Name'].values:
+                                subject_row = df[(df['IPEDS_Name'] == subject_uni) & (df['Year'].isin(target_years))]
+                                if not subject_row.empty:
+                                    year_df = pd.concat([year_df, subject_row], ignore_index=True)
                         else:
-                            # Numeric rank
-                            njit_rank = float(njit_rank_raw)
-
-                            # Convert rank column to numeric for comparison (handles string ranks like USN)
+                            subject_rank = float(subject_rank_raw)
                             year_df['_temp_rank'] = pd.to_numeric(year_df[rank_col], errors='coerce')
-
-                            # Filter to universities within ±25 ranks of NJIT
                             year_df = year_df[
-                                (year_df['_temp_rank'] >= njit_rank - 25) &
-                                (year_df['_temp_rank'] <= njit_rank + 25)
+                                (year_df['_temp_rank'] >= subject_rank - 25) &
+                                (year_df['_temp_rank'] <= subject_rank + 25)
                             ].copy()
-
-                            # Drop temporary column
                             year_df = year_df.drop(columns=['_temp_rank'])
 
-                            # Ensure NJIT itself is in the results
-                            if njit_name not in year_df['IPEDS_Name'].values:
-                                # Add NJIT back if it was filtered out
-                                njit_row = df[(df['IPEDS_Name'] == njit_name) & (df['Year'].isin(target_years))]
-                                if not njit_row.empty:
-                                    year_df = pd.concat([year_df, njit_row], ignore_index=True)
+                            if subject_uni not in year_df['IPEDS_Name'].values:
+                                subject_row = df[(df['IPEDS_Name'] == subject_uni) & (df['Year'].isin(target_years))]
+                                if not subject_row.empty:
+                                    year_df = pd.concat([year_df, subject_row], ignore_index=True)
                     except (ValueError, TypeError, IndexError):
-                        # If parsing fails, send top 50
                         try:
                             year_df = year_df.nsmallest(50, rank_col)
                         except (TypeError, ValueError, KeyError):
                             try:
                                 year_df = year_df.sort_values(rank_col).head(50)
                             except (TypeError, ValueError, KeyError):
-                                # If both fail, take first 50 rows
                                 year_df = year_df.head(50)
     # 2. Geographic filtering
     elif needs_nj_filter and 'New_Jersey_University' in year_df.columns:
@@ -379,8 +363,14 @@ def prepare_dataset_context(df: pd.DataFrame, question: str = "") -> str:
 
     # Add filtering note for competitor questions
     filter_note = ""
-    if needs_competitors and njit_present:
-        filter_note = "\nNOTE: Data pre-filtered to universities with similar ranks. List all universities EXCEPT New Jersey Institute of Technology as competitors — NJIT is the subject, not a competitor of itself."
+    if needs_competitors and subject_uni and subject_uni in available_unis:
+        rank_info = f" (rank {subject_rank_display})" if subject_rank_display else ""
+        filter_note = (
+            f"\nNOTE: Competitor question about {subject_uni}{rank_info}. "
+            f"In your response: first show '{subject_uni}: rank X' on its own line, "
+            f"then list the OTHER universities as competitors. "
+            f"Do NOT list {subject_uni} again in the competitors list — it is the subject, not a competitor of itself."
+        )
 
     context = f"""
 DATASET: {_CURRENT_AGENCY} University Rankings
@@ -544,21 +534,26 @@ CORRECT: New Jersey Institute of Technology is ranked 501-600 in TIMES 2021.
 WRONG: Adding Overall score, Teaching score, Research score, or any other metric — those were NOT asked.
 WRONG: Adding "Conclusion:" at the end — not needed for a simple question.
 
-EXAMPLE — "Who are NJIT's top 4 competitors?"
-CORRECT (NJIT is NOT listed — it is the subject, not a competitor):
+EXAMPLE — "Who are [University X]'s top 4 competitors?"
+CORRECT format (University X shown first, then competitors listed separately):
+**[University X]**: Rank 501-600
+
+Competitors:
 - **Stevens Institute of Technology**: Rank 501-600
 - **Rensselaer Polytechnic Institute**: Rank 501-600
 - **University of Denver**: Rank 501-600
 - **Drexel University**: Rank 501-600
 
-**Conclusion:** These four universities are NJIT's closest competitors.
+**Conclusion:** These four universities are [University X]'s closest competitors.
 
-EXAMPLE — "Compare NJIT and Stevens"
+NOTE: [University X] is NOT repeated in the competitors list — it is the subject, not a competitor of itself. This rule applies regardless of which university is asked about (NJIT, MIT, Stevens, etc.).
+
+EXAMPLE — "Compare [University X] and [University Y]"
 CORRECT:
-- **NJIT**: Rank 601-800
-- **Stevens**: Rank 501-600
+- **[University X]**: Rank 601-800
+- **[University Y]**: Rank 501-600
 
-**Conclusion:** Stevens is ranked higher than NJIT.
+**Conclusion:** [University Y] is ranked higher than [University X].
 
 RULE: NEVER show raw column names like Times_Rank, QS_Rank, IPEDS_Name — write "rank" in plain English.
 LOWER rank number = BETTER ranking. HIGHER score = BETTER performance."""
@@ -758,7 +753,7 @@ FORMAT RULES (strictly follow):
 - Single factual → 1-2 sentences, plain prose, NO conclusion
 - List/ranking questions → `-` bullet per item with value bolded, then **Conclusion:** line
 - Comparison → `-` bullet per university with key metrics bolded, then **Conclusion:** line
-- For competitor questions: EXCLUDE the university being asked about from the list
+- For competitor questions: first show the subject university's rank, then list competitors — NEVER include the subject university in its own competitor list (applies to any university: NJIT, MIT, Stevens, etc.)
 
 Example output style for a list question:
 - **Berea College**: Pell gap **-0.24** — best equity
