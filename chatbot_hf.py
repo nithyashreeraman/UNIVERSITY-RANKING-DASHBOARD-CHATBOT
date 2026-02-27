@@ -182,6 +182,7 @@ def prepare_dataset_context(df: pd.DataFrame, question: str = "") -> str:
     # 1. Competitor questions - HIGHEST PRIORITY
     subject_uni = None
     subject_rank_display = ""
+    subject_competitor_summary = ""
     if needs_competitors:
         # Determine subject university: use first mentioned uni, fall back to NJIT
         njit_name = "New Jersey Institute of Technology"
@@ -230,10 +231,22 @@ def prepare_dataset_context(df: pd.DataFrame, question: str = "") -> str:
                             subject_rank_mid = parse_rank_to_mid(subject_rank_raw)
                             year_df['_temp_numeric_rank'] = year_df[rank_col].apply(parse_rank_to_mid)
                             year_df['_rank_diff'] = (year_df['_temp_numeric_rank'] - subject_rank_mid).abs()
-                            # Exclude the subject university from the sorted list, then take 15 nearest
+                            # Build sorted competitor list in Python — inject directly so model uses exact order
                             others_df = year_df[year_df['IPEDS_Name'] != subject_uni].copy()
-                            nearest = others_df.nsmallest(15, '_rank_diff')
-                            # Add subject university back
+                            nearest = others_df.nsmallest(10, '_rank_diff')
+                            # Store competitor info for filter_note injection
+                            competitor_lines = [
+                                f"⚠️ COMPETITOR RANKING — PRE-SORTED BY PYTHON. USE THIS ORDER.",
+                                f"Subject: {subject_uni} (rank {subject_rank_display})",
+                                f"Closest competitors by rank (sorted by how close they are):"
+                            ]
+                            for _, r in nearest.iterrows():
+                                diff = int(r['_rank_diff'])
+                                competitor_lines.append(
+                                    f"  {r['IPEDS_Name']}: rank {r[rank_col]} ({diff} rank positions away)"
+                                )
+                            subject_competitor_summary = "\n".join(competitor_lines)
+                            # Keep only subject + nearest 10 in CSV
                             subject_row_df = year_df[year_df['IPEDS_Name'] == subject_uni]
                             year_df = pd.concat([subject_row_df, nearest], ignore_index=True)
                             year_df = year_df.drop(columns=['_temp_numeric_rank', '_rank_diff'])
@@ -342,11 +355,12 @@ def prepare_dataset_context(df: pd.DataFrame, question: str = "") -> str:
     filter_note = ""
     if needs_competitors and subject_uni and subject_uni in available_unis:
         rank_info = f" (rank {subject_rank_display})" if subject_rank_display else ""
+        comp_note = f"\n{subject_competitor_summary}" if subject_competitor_summary else ""
         filter_note = (
             f"\nNOTE: Competitor question about {subject_uni}{rank_info}. "
-            f"In your response: first show '{subject_uni}: rank X' on its own line, "
-            f"then list the OTHER universities as competitors. "
-            f"Do NOT list {subject_uni} again in the competitors list — it is the subject, not a competitor of itself."
+            f"Show {subject_uni}'s rank first, then list ONLY the closest competitors (fewest rank positions away). "
+            f"Do NOT list {subject_uni} itself as a competitor."
+            f"{comp_note}"
         )
 
     context = f"""
