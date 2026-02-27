@@ -555,7 +555,8 @@ CORRECT:
 
 **Conclusion:** [University Y] is ranked higher than [University X].
 
-RULE: NEVER show raw column names like Times_Rank, QS_Rank, IPEDS_Name — write "rank" in plain English.
+RULE: NEVER show column names with underscores — always use plain English with spaces.
+Examples: Research_Environment → "Research Environment", No_of_students_per_staff → "students per staff", Female_Ratio → "female ratio", Times_Rank → "rank".
 LOWER rank number = BETTER ranking. HIGHER score = BETTER performance."""
     else:
         system_prompt = """You are a university rankings data analyst. You help users understand university ranking data with EXTREME ACCURACY.
@@ -749,7 +750,7 @@ REMINDER BEFORE ANSWERING:
 FORMAT RULES (strictly follow):
 - START with the answer immediately — NO "To determine...", NO "We look at...", NO column explanations
 - NEVER explain your reasoning or methodology — just give the result with numbers
-- NEVER show raw column names (Times_Rank, QS_Rank, Washington_Rank, IPEDS_Name, etc.) — write "rank" in plain English
+- NEVER show raw column names with underscores (Research_Environment, No_of_students_per_staff, Female_Ratio, Times_Rank, etc.) — always convert to plain English words with spaces (e.g. "Research Environment", "students per staff", "female ratio", "rank")
 - Use markdown formatting: **bold** for university names and key values
 - Use `-` markdown bullet points (NOT • symbol) so they render with proper spacing
 - Single factual → 1-2 sentences, plain prose, NO conclusion
@@ -882,6 +883,10 @@ def render_hf_chatbot_ui(times_df, qs_df, usn_df, washington_df, sidebar_selecte
                 st.sidebar.markdown(f"**You:** {msg['content']}")
             else:
                 content = msg['content']
+                # Replace underscored column names with readable plain English
+                # e.g. Research_Environment → Research Environment, No_of_students_per_staff → No of students per staff
+                content = re.sub(r'\b([A-Za-z][A-Za-z0-9]*(?:_[A-Za-z0-9]+)+)\b',
+                                 lambda m: m.group(0).replace('_', ' '), content)
                 # Convert any • symbols to markdown - bullets for proper rendering
                 content = re.sub(r'\s*•\s*', '\n- ', content).strip()
                 # Ensure markdown - bullets each start on their own line
