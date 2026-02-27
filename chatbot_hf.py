@@ -521,6 +521,19 @@ def get_ai_response(question: str, api_key: str, model_id: str) -> str:
             rank_summary = "\n".join(pell_lines) + ("\n" + rank_summary if rank_summary else "")
             pell_ranking_injected = True
 
+            # Override dataset_context to ONLY show the top 5 — prevents model from
+            # reading the full CSV alphabetically and ignoring the pre-sorted list
+            pell_csv_rows = ["IPEDS_Name,Pell_gap"]
+            for _, row in pell_df.iterrows():
+                pell_csv_rows.append(f"{row['IPEDS_Name']},{row[pell_col]:.4f}")
+            dataset_context = (
+                f"DATASET: Washington University Rankings\n"
+                f"YEAR: {latest_year}\n"
+                f"COLUMNS: IPEDS_Name, Pell_gap\n"
+                f"DATA (already sorted by best Pell equity — smallest absolute gap first):\n"
+                + "\n".join(pell_csv_rows)
+            )
+
     # System prompt with ranking rules
     is_llama = "llama" in model_id.lower()
 
