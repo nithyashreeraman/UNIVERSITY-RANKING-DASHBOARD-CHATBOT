@@ -146,32 +146,13 @@ if selected_peer_types:
         peer_groups_df['PEER_TYPE'].isin(selected_peer_types)
     ]['PEER_NAME'].tolist()
 
-# Clear per-tab widget state when peer groups change (to update defaults)
-if "previous_peer_types" not in st.session_state:
-    st.session_state.previous_peer_types = []
-if "previous_manual_unis" not in st.session_state:
-    st.session_state.previous_manual_unis = []
-
-sidebar_changed = (
-    st.session_state.previous_peer_types != selected_peer_types or
-    sorted(st.session_state.previous_manual_unis) != sorted(manual_selected_unis)
-)
-
-if sidebar_changed:
-    # Sidebar changed - clear per-tab selections so new defaults take effect
-    for key in ["times_optional_unis", "qs_optional_unis", "usn_optional_unis", "washington_optional_unis"]:
-        if key in st.session_state:
-            del st.session_state[key]
-    st.session_state.previous_peer_types = selected_peer_types
-    st.session_state.previous_manual_unis = manual_selected_unis
-
 st.sidebar.markdown("---")
 st.sidebar.header("🏫 Individual Universities")
 
 #Full Base Dataset from All Agencies
 combined_df = pd.concat([times_df, qs_df, usn_df, washington_df], ignore_index=True)
 
-# Filter Combined Dataset 
+# Filter Combined Dataset
 combined_common_df = get_filtered_combined_df(combined_df, common_universities, nj_filter)
 
 # Final Universities for Dropdown
@@ -190,6 +171,24 @@ manual_selected_unis = st.sidebar.multiselect(
     default=[],
     help="Select additional universities to compare"
 )
+
+# Clear per-tab widget state when sidebar selection changes (peer groups or individual unis)
+if "previous_peer_types" not in st.session_state:
+    st.session_state.previous_peer_types = []
+if "previous_manual_unis" not in st.session_state:
+    st.session_state.previous_manual_unis = []
+
+sidebar_changed = (
+    st.session_state.previous_peer_types != selected_peer_types or
+    sorted(st.session_state.previous_manual_unis) != sorted(manual_selected_unis)
+)
+
+if sidebar_changed:
+    for key in ["times_optional_unis", "qs_optional_unis", "usn_optional_unis", "washington_optional_unis"]:
+        if key in st.session_state:
+            del st.session_state[key]
+    st.session_state.previous_peer_types = selected_peer_types
+    st.session_state.previous_manual_unis = manual_selected_unis
 
 # Combine peer groups and manual selections (Rutgers is excluded when peer groups are selected)
 all_selected_unis = list(set(peer_group_universities + manual_selected_unis))
