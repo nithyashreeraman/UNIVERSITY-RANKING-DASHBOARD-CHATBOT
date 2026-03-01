@@ -596,30 +596,27 @@ with tabs[0]:
 with tabs[1]:
     st.markdown("<h2 style='text-align: center; color: #4B4B4B;'>TIMES Ranking</h2>", unsafe_allow_html=True)
 
-    # Build full options list (global + extra TIMES)
-    times_options = list(dict.fromkeys(all_selected_unis + extra_times_unis))
+    # Tab multiselect shows only ADDITIONAL universities (not already in sidebar)
+    times_options = [u for u in (list(dict.fromkeys(extra_times_unis)) +
+                     [u for u in times_df["IPEDS_Name"].unique() if u not in all_selected_unis and u != NJIT_NAME])
+                     if u not in all_selected_unis]
+    times_options = sorted(set(times_options))
 
-    # Get previously selected manual universities for TIMES
-    manual_times_selected_unis = st.session_state.get("manual_times_selected_unis", [])
+    # Restore previous tab-specific additions (filter out any now in sidebar)
+    manual_times_selected_unis = [u for u in st.session_state.get("manual_times_selected_unis", [])
+                                   if u not in all_selected_unis]
 
-    # Merge peer groups + manual selections -> ensures peer groups are always included
-    merged_selected_unis = list(set(all_selected_unis + manual_times_selected_unis))
-
-    # Multi-select for TIMES
     current_times_selected_unis = st.multiselect(
-        "🔎 Select universities to compare with NJIT:",
+        "🔎 Add more universities to compare with NJIT:",
         options=times_options,
-        default=merged_selected_unis,
+        default=manual_times_selected_unis,
         key="times_optional_unis"
     )
 
-    # Compute manual selections = current - peer groups 
-    st.session_state["manual_times_selected_unis"] = [
-        uni for uni in current_times_selected_unis if uni not in all_selected_unis
-    ]
+    st.session_state["manual_times_selected_unis"] = current_times_selected_unis
 
-    # Final unis = NJIT + all selected
-    final_times_unis = [NJIT_NAME] + current_times_selected_unis
+    # Sidebar selections always included — tab multiselect is purely additive
+    final_times_unis = list(dict.fromkeys([NJIT_NAME] + all_selected_unis + current_times_selected_unis))
 
     color_map = create_color_map(final_times_unis)
 
@@ -782,24 +779,22 @@ with tabs[1]:
 with tabs[2]:
     st.markdown("<h2 style='text-align: center; color: #4B4B4B;'>QS Ranking</h2>", unsafe_allow_html=True)
 
-    qs_options = list(dict.fromkeys(all_selected_unis + extra_qs_unis))
+    qs_options = sorted(set([u for u in qs_df["IPEDS_Name"].unique()
+                              if u not in all_selected_unis and u != NJIT_NAME]))
 
-    manual_qs_selected_unis = st.session_state.get("manual_qs_selected_unis", [])
-
-    merged_selected_unis = list(set(all_selected_unis + manual_qs_selected_unis))
+    manual_qs_selected_unis = [u for u in st.session_state.get("manual_qs_selected_unis", [])
+                                if u not in all_selected_unis]
 
     current_qs_selected_unis = st.multiselect(
-        "🔎 Select universities to compare with NJIT:",
+        "🔎 Add more universities to compare with NJIT:",
         options=qs_options,
-        default=merged_selected_unis,
+        default=manual_qs_selected_unis,
         key="qs_optional_unis"
     )
 
-    st.session_state["manual_qs_selected_unis"] = [
-        uni for uni in current_qs_selected_unis if uni not in all_selected_unis
-    ]
+    st.session_state["manual_qs_selected_unis"] = current_qs_selected_unis
 
-    final_qs_unis = [NJIT_NAME] + current_qs_selected_unis
+    final_qs_unis = list(dict.fromkeys([NJIT_NAME] + all_selected_unis + current_qs_selected_unis))
 
     color_map = create_color_map(final_qs_unis)
 
@@ -901,24 +896,22 @@ with tabs[2]:
 with tabs[3]:
     st.markdown("<h2 style='text-align: center; color: #4B4B4B;'>USN Ranking</h2>", unsafe_allow_html=True)
 
-    usn_options = list(dict.fromkeys(all_selected_unis + extra_usn_unis))
+    usn_options = sorted(set([u for u in usn_df["IPEDS_Name"].unique()
+                               if u not in all_selected_unis and u != NJIT_NAME]))
 
-    manual_usn_selected_unis = st.session_state.get("manual_usn_selected_unis", [])
-
-    merged_selected_unis = list(set(all_selected_unis + manual_usn_selected_unis))
+    manual_usn_selected_unis = [u for u in st.session_state.get("manual_usn_selected_unis", [])
+                                 if u not in all_selected_unis]
 
     current_usn_selected_unis = st.multiselect(
-        "🔎 Select universities to compare with NJIT:",
+        "🔎 Add more universities to compare with NJIT:",
         options=usn_options,
-        default=merged_selected_unis,
+        default=manual_usn_selected_unis,
         key="usn_optional_unis"
     )
 
-    st.session_state["manual_usn_selected_unis"] = [
-        uni for uni in current_usn_selected_unis if uni not in all_selected_unis
-    ]
+    st.session_state["manual_usn_selected_unis"] = current_usn_selected_unis
 
-    final_usn_unis = [NJIT_NAME] + current_usn_selected_unis
+    final_usn_unis = list(dict.fromkeys([NJIT_NAME] + all_selected_unis + current_usn_selected_unis))
 
     color_map = create_color_map(final_usn_unis)
 
@@ -1035,24 +1028,22 @@ with tabs[3]:
 with tabs[4]:
     st.markdown("<h2 style='text-align: center; color: #4B4B4B;'>Washington Ranking</h2>", unsafe_allow_html=True)
 
-    washington_options = list(dict.fromkeys(all_selected_unis + extra_washington_unis))
+    washington_options = sorted(set([u for u in washington_df["IPEDS_Name"].unique()
+                                      if u not in all_selected_unis and u != NJIT_NAME]))
 
-    manual_washington_selected_unis = st.session_state.get("manual_washington_selected_unis", [])
-
-    merged_selected_unis = list(set(all_selected_unis + manual_washington_selected_unis))
+    manual_washington_selected_unis = [u for u in st.session_state.get("manual_washington_selected_unis", [])
+                                        if u not in all_selected_unis]
 
     current_washington_selected_unis = st.multiselect(
-        "🔎 Select universities to compare with NJIT:",
+        "🔎 Add more universities to compare with NJIT:",
         options=washington_options,
-        default=merged_selected_unis,
+        default=manual_washington_selected_unis,
         key="washington_optional_unis"
     )
 
-    st.session_state["manual_washington_selected_unis"] = [
-        uni for uni in current_washington_selected_unis if uni not in all_selected_unis
-    ]
+    st.session_state["manual_washington_selected_unis"] = current_washington_selected_unis
 
-    final_washington_unis = [NJIT_NAME] + current_washington_selected_unis
+    final_washington_unis = list(dict.fromkeys([NJIT_NAME] + all_selected_unis + current_washington_selected_unis))
 
     color_map = create_color_map(final_washington_unis)
 
