@@ -438,6 +438,65 @@ def expand_abbreviations_in_question(question: str) -> str:
     return expanded_question
 
 
+def _pandas_fallback(question: str, rank_summary: str, pell_ranking_injected: bool,
+                     subject_competitor_summary: str, subject_uni: str,
+                     subject_rank_display: str, df) -> str:
+    """
+    Template-based fallback used when LLM is unavailable (rate limit, API error, etc).
+    Formats the pre-computed pandas results directly — no LLM needed.
+    """
+    note = "*⚠️ AI assistant is temporarily unavailable. Showing data directly from the dataset.*\n\n"
+
+    # --- Pell equity question ---
+    if pell_ranking_injected and rank_summary:
+        lines = []
+        for line in rank_summary.split("\n"):
+            stripped = line.strip()
+            if stripped.startswith("#"):
+                # e.g. "#1 Berea College: Pell gap = -0.0165"
+                content = stripped.lstrip("#0123456789").strip()
+                lines.append(f"- **{content}**")
+        if lines:
+            top = lines[0].replace("- **", "").replace("**", "").split(":")[0].strip()
+            return note + "\n\n".join(lines) + f"\n\n**Conclusion:** {top} has the best Pell equity."
+
+    # --- Competitor question (subject_competitor_summary passed from get_ai_response) ---
+    if subject_uni and subject_rank_display:
+        out_lines = [f"**{subject_uni}**: rank {subject_rank_display}", "", "Competitors:"]
+        if subject_competitor_summary:
+            for line in subject_competitor_summary.split("\n"):
+                if "positions away" in line:
+                    out_lines.append(f"- {line.strip()}")
+        if len(out_lines) > 3:
+            return note + "\n".join(out_lines)
+
+    # --- Rank summary available (specific university lookup or comparison) ---
+    if rank_summary:
+        lines = []
+        for line in rank_summary.split("\n"):
+            line = line.strip()
+            if not line or line.startswith("⚠️") or line.startswith("Gap closest"):
+                continue
+            if ":" in line:
+                uni, metrics = line.split(":", 1)
+                metric_parts = [m.strip() for m in metrics.split(",") if "=" in m]
+                formatted = ", ".join(
+                    f"{m.split('=')[0].replace('_', ' ').strip()} **{m.split('=')[1].strip()}**"
+                    for m in metric_parts
+                )
+                lines.append(f"- **{uni.strip()}**: {formatted}")
+        if lines:
+            return note + "\n\n".join(lines)
+
+    # --- Generic fallback ---
+    agency = _CURRENT_AGENCY or "this agency"
+    return (
+        note +
+        f"The {agency} dataset was queried for: **{question}**\n\n"
+        f"Please try again in a moment, or switch to a different model."
+    )
+
+
 def get_ai_response(question: str, api_key: str, model_id: str) -> str:
     """
     Main function to get AI response.
@@ -454,6 +513,11 @@ def get_ai_response(question: str, api_key: str, model_id: str) -> str:
 
     # Prepare dataset context (auto-detects year from question)
     dataset_context = prepare_dataset_context(df, expanded_question)
+
+    # Defaults for fallback — overridden below if question type matches
+    subject_uni = None
+    subject_rank_display = ""
+    subject_competitor_summary = ""
 
     # Pre-compute ALL data for mentioned universities and inject directly into prompt
     # This bypasses unreliable CSV parsing - model sees all metrics as plain text
@@ -772,9 +836,18 @@ Example output style for a list question:
     try:
         client = InferenceClient(model=model_id, token=api_key)
         response = call_hf_model(client, system_prompt, user_message)
+        # If LLM returns an error string, fall back to template
+        if response.startswith("Error:"):
+            return _pandas_fallback(
+                expanded_question, rank_summary, pell_ranking_injected,
+                subject_competitor_summary, subject_uni, subject_rank_display, df
+            )
         return response
     except Exception as e:
-        return f"Error: {str(e)}"
+        return _pandas_fallback(
+            expanded_question, rank_summary, pell_ranking_injected,
+            subject_competitor_summary, subject_uni, subject_rank_display, df
+        )
 
 
 # ============================================================================
