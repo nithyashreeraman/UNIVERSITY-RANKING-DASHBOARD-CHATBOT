@@ -149,13 +149,21 @@ if selected_peer_types:
 # Clear per-tab widget state when peer groups change (to update defaults)
 if "previous_peer_types" not in st.session_state:
     st.session_state.previous_peer_types = []
+if "previous_manual_unis" not in st.session_state:
+    st.session_state.previous_manual_unis = []
 
-if st.session_state.previous_peer_types != selected_peer_types:
-    # Peer groups changed - clear per-tab selections so new defaults take effect
+sidebar_changed = (
+    st.session_state.previous_peer_types != selected_peer_types or
+    sorted(st.session_state.previous_manual_unis) != sorted(manual_selected_unis)
+)
+
+if sidebar_changed:
+    # Sidebar changed - clear per-tab selections so new defaults take effect
     for key in ["times_optional_unis", "qs_optional_unis", "usn_optional_unis", "washington_optional_unis"]:
         if key in st.session_state:
             del st.session_state[key]
     st.session_state.previous_peer_types = selected_peer_types
+    st.session_state.previous_manual_unis = manual_selected_unis
 
 st.sidebar.markdown("---")
 st.sidebar.header("🏫 Individual Universities")
